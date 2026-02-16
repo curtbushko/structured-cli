@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-run.json",
+  "title": "Docker Run Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the container ran successfully"
+    },
+    "container_id": {
+      "type": "string",
+      "description": "ID of the created/running container"
+    },
+    "output": {
+      "type": "string",
+      "description": "Container output (if not detached)"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Container exit code"
+    },
+    "detached": {
+      "type": "boolean",
+      "description": "Whether container is running in background"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "container_id"]
+}

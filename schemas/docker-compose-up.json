@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-compose-up.json",
+  "title": "Docker Compose Up Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all services started successfully"
+    },
+    "services": {
+      "type": "array",
+      "description": "Services and their status",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Service name"
+          },
+          "status": {
+            "type": "string",
+            "description": "Service status"
+          },
+          "container_id": {
+            "type": "string",
+            "description": "Container ID"
+          },
+          "image": {
+            "type": "string",
+            "description": "Image used by the service"
+          },
+          "state": {
+            "type": "string",
+            "description": "Container state"
+          },
+          "ports": {
+            "type": "string",
+            "description": "Port mappings"
+          },
+          "health": {
+            "type": "string",
+            "description": "Health status"
+          }
+        }
+      }
+    },
+    "networks": {
+      "type": "array",
+      "description": "Created networks",
+      "items": {
+        "type": "string"
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "description": "Created volumes",
+      "items": {
+        "type": "string"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warning messages",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "services"]
+}

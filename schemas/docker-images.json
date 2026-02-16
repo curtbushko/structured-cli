@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-images.json",
+  "title": "Docker Images Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command completed successfully"
+    },
+    "images": {
+      "type": "array",
+      "description": "List of images",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Image ID"
+          },
+          "repository": {
+            "type": "string",
+            "description": "Image repository"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Image tag"
+          },
+          "created": {
+            "type": "string",
+            "description": "When the image was created"
+          },
+          "size": {
+            "type": "string",
+            "description": "Image size"
+          },
+          "digest": {
+            "type": "string",
+            "description": "Image digest"
+          }
+        }
+      }
+    }
+  },
+  "required": ["success", "images"]
+}

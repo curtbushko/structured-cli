@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-pull.json",
+  "title": "Docker Pull Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the pull completed successfully"
+    },
+    "image": {
+      "type": "string",
+      "description": "Pulled image reference"
+    },
+    "digest": {
+      "type": "string",
+      "description": "Image digest"
+    },
+    "status": {
+      "type": "string",
+      "description": "Pull status (downloaded, up to date, etc.)"
+    },
+    "layers": {
+      "type": "array",
+      "description": "Layer statuses",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Layer ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "Layer status"
+          },
+          "progress": {
+            "type": "integer",
+            "description": "Download progress percentage"
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "image", "status"]
+}

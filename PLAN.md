@@ -111,16 +111,16 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `npm init` parser + schema
 
 ### Phase 13: Docker Parsers
-- [ ] `docker ps` parser + schema
-- [ ] `docker build` parser + schema
-- [ ] `docker logs` parser + schema
-- [ ] `docker images` parser + schema
-- [ ] `docker run` parser + schema
-- [ ] `docker exec` parser + schema
-- [ ] `docker pull` parser + schema
-- [ ] `docker compose up` parser + schema
-- [ ] `docker compose down` parser + schema
-- [ ] `docker compose ps` parser + schema
+- [x] `docker ps` parser + schema
+- [x] `docker build` parser + schema
+- [x] `docker logs` parser + schema
+- [x] `docker images` parser + schema
+- [x] `docker run` parser + schema
+- [x] `docker exec` parser + schema
+- [x] `docker pull` parser + schema
+- [x] `docker compose up` parser + schema
+- [x] `docker compose down` parser + schema
+- [x] `docker compose ps` parser + schema
 
 ### Phase 14: Python Parsers
 - [ ] `pip install` parser + schema

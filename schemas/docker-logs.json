@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-logs.json",
+  "title": "Docker Logs Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command completed successfully"
+    },
+    "container_id": {
+      "type": "string",
+      "description": "Container ID"
+    },
+    "lines": {
+      "type": "array",
+      "description": "Log lines",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Log timestamp"
+          },
+          "stream": {
+            "type": "string",
+            "description": "Output stream (stdout or stderr)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Log message content"
+          }
+        }
+      }
+    },
+    "total_lines": {
+      "type": "integer",
+      "description": "Total number of log lines"
+    }
+  },
+  "required": ["success", "lines", "total_lines"]
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-compose-down.json",
+  "title": "Docker Compose Down Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all services stopped successfully"
+    },
+    "stopped_containers": {
+      "type": "array",
+      "description": "Stopped containers",
+      "items": {
+        "type": "string"
+      }
+    },
+    "removed_containers": {
+      "type": "array",
+      "description": "Removed containers",
+      "items": {
+        "type": "string"
+      }
+    },
+    "removed_networks": {
+      "type": "array",
+      "description": "Removed networks",
+      "items": {
+        "type": "string"
+      }
+    },
+    "removed_volumes": {
+      "type": "array",
+      "description": "Removed volumes",
+      "items": {
+        "type": "string"
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "stopped_containers", "removed_containers"]
+}

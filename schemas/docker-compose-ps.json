@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-compose-ps.json",
+  "title": "Docker Compose PS Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command completed successfully"
+    },
+    "project_name": {
+      "type": "string",
+      "description": "Compose project name"
+    },
+    "services": {
+      "type": "array",
+      "description": "Services and their status",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Service name"
+          },
+          "status": {
+            "type": "string",
+            "description": "Service status"
+          },
+          "container_id": {
+            "type": "string",
+            "description": "Container ID"
+          },
+          "image": {
+            "type": "string",
+            "description": "Image used by the service"
+          },
+          "state": {
+            "type": "string",
+            "description": "Container state"
+          },
+          "ports": {
+            "type": "string",
+            "description": "Port mappings"
+          },
+          "health": {
+            "type": "string",
+            "description": "Health status"
+          }
+        }
+      }
+    }
+  },
+  "required": ["success", "services"]
+}

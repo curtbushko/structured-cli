@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-ps.json",
+  "title": "Docker PS Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command completed successfully"
+    },
+    "containers": {
+      "type": "array",
+      "description": "List of containers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Container ID"
+          },
+          "names": {
+            "type": "string",
+            "description": "Container name(s)"
+          },
+          "image": {
+            "type": "string",
+            "description": "Image used to create the container"
+          },
+          "command": {
+            "type": "string",
+            "description": "Command running in the container"
+          },
+          "created": {
+            "type": "string",
+            "description": "When the container was created"
+          },
+          "status": {
+            "type": "string",
+            "description": "Container status"
+          },
+          "ports": {
+            "type": "string",
+            "description": "Port mappings"
+          },
+          "size": {
+            "type": "string",
+            "description": "Container size"
+          },
+          "state": {
+            "type": "string",
+            "description": "Container state (running, exited, etc.)"
+          }
+        }
+      }
+    }
+  },
+  "required": ["success", "containers"]
+}

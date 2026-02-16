@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-build.json",
+  "title": "Docker Build Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build completed successfully"
+    },
+    "image_id": {
+      "type": "string",
+      "description": "ID of the built image"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Tags applied to the image",
+      "items": {
+        "type": "string"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "Build steps executed",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "description": "Step number"
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Dockerfile instruction"
+          },
+          "cached": {
+            "type": "boolean",
+            "description": "Whether the step used cache"
+          },
+          "duration": {
+            "type": "string",
+            "description": "Step duration"
+          }
+        }
+      }
+    },
+    "total_steps": {
+      "type": "integer",
+      "description": "Total number of build steps"
+    },
+    "cached": {
+      "type": "integer",
+      "description": "Number of cached steps"
+    },
+    "duration": {
+      "type": "string",
+      "description": "Build duration"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Build errors",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Build warnings",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "image_id", "steps"]
+}

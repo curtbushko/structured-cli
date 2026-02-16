@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/docker-exec.json",
+  "title": "Docker Exec Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command completed successfully"
+    },
+    "container_id": {
+      "type": "string",
+      "description": "Container ID"
+    },
+    "output": {
+      "type": "string",
+      "description": "Command output"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Command exit code"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "output"]
+}

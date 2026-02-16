@@ -7,6 +7,7 @@ import (
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/docker"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
@@ -83,6 +84,18 @@ func run() int {
 	registry.Register(npm.NewRunParser())
 	registry.Register(npm.NewTestParser())
 	registry.Register(npm.NewInitParser())
+
+	// Register Docker parsers
+	registry.Register(docker.NewPSParser())
+	registry.Register(docker.NewBuildParser())
+	registry.Register(docker.NewLogsParser())
+	registry.Register(docker.NewImagesParser())
+	registry.Register(docker.NewRunParser())
+	registry.Register(docker.NewExecParser())
+	registry.Register(docker.NewPullParser())
+	registry.Register(docker.NewComposeUpParser())
+	registry.Register(docker.NewComposeDownParser())
+	registry.Register(docker.NewComposePSParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)
