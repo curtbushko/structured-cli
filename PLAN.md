@@ -63,14 +63,14 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `git reflog` parser + schema
 
 ### Phase 7: Go Parsers
-- [ ] `go build` parser + schema
-- [ ] `go test` parser + schema
-- [ ] `go test -cover` parser + schema
-- [ ] `go vet` parser + schema
-- [ ] `go run` parser + schema
-- [ ] `go mod tidy` parser + schema
-- [ ] `gofmt` parser + schema
-- [ ] `go generate` parser + schema
+- [x] `go build` parser + schema
+- [x] `go test` parser + schema
+- [x] `go test -cover` parser + schema
+- [x] `go vet` parser + schema
+- [x] `go run` parser + schema
+- [x] `go mod tidy` parser + schema
+- [x] `gofmt` parser + schema
+- [x] `go generate` parser + schema
 
 ### Phase 8: Build Tool Parsers
 - [ ] `tsc` parser + schema
