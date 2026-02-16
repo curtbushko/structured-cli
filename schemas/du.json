@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/du.json",
+  "title": "DU Output",
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "size": { "type": "integer" },
+          "sizeHuman": { "type": "string" }
+        },
+        "required": ["path", "size"]
+      }
+    },
+    "total": { "type": "integer" },
+    "totalHuman": { "type": "string" }
+  },
+  "required": ["entries"]
+}

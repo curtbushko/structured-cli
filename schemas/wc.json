@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/wc.json",
+  "title": "WC Output",
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "lines": { "type": "integer" },
+          "words": { "type": "integer" },
+          "chars": { "type": "integer" },
+          "bytes": { "type": "integer" }
+        }
+      }
+    },
+    "total": {
+      "type": "object",
+      "properties": {
+        "file": { "type": "string" },
+        "lines": { "type": "integer" },
+        "words": { "type": "integer" },
+        "chars": { "type": "integer" },
+        "bytes": { "type": "integer" }
+      }
+    }
+  },
+  "required": ["files"]
+}

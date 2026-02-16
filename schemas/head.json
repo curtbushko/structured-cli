@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/head.json",
+  "title": "Head Output",
+  "type": "object",
+  "properties": {
+    "content": { "type": "string" },
+    "lines": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "lineCount": { "type": "integer" }
+  },
+  "required": ["content", "lines", "lineCount"]
+}

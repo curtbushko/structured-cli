@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/ripgrep.json",
+  "title": "Ripgrep Output",
+  "type": "object",
+  "properties": {
+    "matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "column": { "type": "integer" },
+          "content": { "type": "string" },
+          "matchText": { "type": "string" }
+        },
+        "required": ["file"]
+      }
+    },
+    "count": { "type": "integer" },
+    "filesMatched": { "type": "integer" },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "filesSearched": { "type": "integer" },
+        "bytesSearched": { "type": "integer" },
+        "duration": { "type": "string" }
+      }
+    }
+  },
+  "required": ["matches", "count", "filesMatched"]
+}

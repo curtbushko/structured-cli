@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/find.json",
+  "title": "Find Output",
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "count": { "type": "integer" }
+  },
+  "required": ["files", "count"]
+}

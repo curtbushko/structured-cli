@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/grep.json",
+  "title": "Grep Output",
+  "type": "object",
+  "properties": {
+    "matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "content": { "type": "string" },
+          "column": { "type": "integer" }
+        },
+        "required": ["content"]
+      }
+    },
+    "count": { "type": "integer" },
+    "filesMatched": { "type": "integer" }
+  },
+  "required": ["matches", "count", "filesMatched"]
+}

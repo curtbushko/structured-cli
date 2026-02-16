@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/ls.json",
+  "title": "LS Output",
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["file", "directory", "symlink", "socket", "fifo", "block", "char", "unknown"]
+          },
+          "size": { "type": "integer" },
+          "permissions": { "type": "string" },
+          "owner": { "type": "string" },
+          "group": { "type": "string" },
+          "modified": { "type": "string" },
+          "links": { "type": "integer" },
+          "target": { "type": "string" }
+        },
+        "required": ["name", "type"]
+      }
+    },
+    "total": { "type": "integer" }
+  },
+  "required": ["entries"]
+}

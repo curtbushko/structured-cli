@@ -145,16 +145,16 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `just` parser + schema
 
 ### Phase 17: File Operations Parsers
-- [ ] `ls` parser + schema
-- [ ] `find` parser + schema
-- [ ] `grep` parser + schema
-- [ ] `ripgrep (rg)` parser + schema
-- [ ] `fd` parser + schema
-- [ ] `cat` parser + schema
-- [ ] `head` / `tail` parser + schema
-- [ ] `wc` parser + schema
-- [ ] `du` parser + schema
-- [ ] `df` parser + schema
+- [x] `ls` parser + schema
+- [x] `find` parser + schema
+- [x] `grep` parser + schema
+- [x] `ripgrep (rg)` parser + schema
+- [x] `fd` parser + schema
+- [x] `cat` parser + schema
+- [x] `head` / `tail` parser + schema
+- [x] `wc` parser + schema
+- [x] `du` parser + schema
+- [x] `df` parser + schema
 
 ### Phase 18: Polish & Release
 - [ ] Comprehensive test coverage (>80%)

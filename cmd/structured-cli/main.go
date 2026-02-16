@@ -9,6 +9,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/cargo"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/docker"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/fileops"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
@@ -119,6 +120,19 @@ func run() int {
 	registry.Register(docker.NewComposeUpParser())
 	registry.Register(docker.NewComposeDownParser())
 	registry.Register(docker.NewComposePSParser())
+
+	// Register file operations parsers
+	registry.Register(fileops.NewLSParser())
+	registry.Register(fileops.NewFindParser())
+	registry.Register(fileops.NewGrepParser())
+	registry.Register(fileops.NewRipgrepParser())
+	registry.Register(fileops.NewFDParser())
+	registry.Register(fileops.NewCatParser())
+	registry.Register(fileops.NewHeadParser())
+	registry.Register(fileops.NewTailParser())
+	registry.Register(fileops.NewWCParser())
+	registry.Register(fileops.NewDUParser())
+	registry.Register(fileops.NewDFParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)
