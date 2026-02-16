@@ -95,11 +95,11 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `cargo test` parser + schema
 
 ### Phase 11: Schema Validation & Error Handling
-- [ ] Implement schema validation service
+- [x] Implement schema validation service
 - [x] Implement error JSON output (`{"error": "...", "exitCode": N}`)
 - [x] Implement unsupported command fallback (`{"raw": "...", "parsed": false}`)
-- [ ] Implement native JSON passthrough with validation
-- [ ] Implement streaming command buffering
+- [x] Implement native JSON passthrough with validation
+- [x] Implement streaming command buffering
 
 ### Phase 12: NPM Parsers
 - [x] `npm install` parser + schema
@@ -157,7 +157,7 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `df` parser + schema
 
 ### Phase 18: Polish & Release
-- [ ] Comprehensive test coverage (>80%)
+- [x] Comprehensive test coverage (>80%)
 - [ ] Documentation (README, CLAUDE.md)
 
 ---
