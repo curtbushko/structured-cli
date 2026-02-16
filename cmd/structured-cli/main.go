@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
 	"github.com/curtbushko/structured-cli/internal/application"
 	"github.com/curtbushko/structured-cli/internal/domain"
@@ -23,7 +24,13 @@ func run() int {
 
 	// Create application services
 	registry := application.NewInMemoryParserRegistry()
-	// Note: No parsers registered yet - all commands will use passthrough mode
+
+	// Register parsers
+	registry.Register(git.NewStatusParser())
+	registry.Register(git.NewLogParser())
+	registry.Register(git.NewDiffParser())
+	registry.Register(git.NewBranchParser())
+	registry.Register(git.NewShowParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)

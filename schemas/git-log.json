@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-log.json",
+  "title": "Git Log Output",
+  "type": "object",
+  "properties": {
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hash": { "type": "string" },
+          "abbrevHash": { "type": "string" },
+          "author": { "type": "string" },
+          "email": { "type": "string" },
+          "date": { "type": "string" },
+          "message": { "type": "string" },
+          "subject": { "type": "string" },
+          "body": { "type": "string" },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": { "type": "string" },
+                "additions": { "type": "integer" },
+                "deletions": { "type": "integer" }
+              },
+              "required": ["path", "additions", "deletions"]
+            }
+          },
+          "insertions": { "type": "integer" },
+          "deletions": { "type": "integer" }
+        },
+        "required": ["hash", "abbrevHash", "author", "email", "date", "message", "subject"]
+      }
+    }
+  },
+  "required": ["commits"]
+}

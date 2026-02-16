@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-show.json",
+  "title": "Git Show Output",
+  "type": "object",
+  "properties": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "The full commit hash (SHA-1)"
+        },
+        "abbrevHash": {
+          "type": "string",
+          "description": "The abbreviated commit hash"
+        },
+        "author": {
+          "type": "string",
+          "description": "The name of the commit author"
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the commit author"
+        },
+        "date": {
+          "type": "string",
+          "description": "The commit date"
+        },
+        "message": {
+          "type": "string",
+          "description": "The full commit message (subject + body)"
+        },
+        "subject": {
+          "type": "string",
+          "description": "The first line of the commit message"
+        },
+        "body": {
+          "type": "string",
+          "description": "The remainder of the commit message after the subject"
+        }
+      },
+      "required": ["hash", "author", "date", "message"]
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "oldPath": { "type": "string" },
+              "status": {
+                "type": "string",
+                "enum": ["added", "modified", "deleted", "renamed"]
+              },
+              "binary": { "type": "boolean" },
+              "additions": { "type": "integer" },
+              "deletions": { "type": "integer" },
+              "hunks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "oldStart": { "type": "integer" },
+                    "oldLines": { "type": "integer" },
+                    "newStart": { "type": "integer" },
+                    "newLines": { "type": "integer" },
+                    "header": { "type": "string" },
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": ["context", "add", "delete"]
+                          },
+                          "content": { "type": "string" },
+                          "oldLineNo": { "type": "integer" },
+                          "newLineNo": { "type": "integer" }
+                        },
+                        "required": ["type", "content"]
+                      }
+                    }
+                  },
+                  "required": ["oldStart", "oldLines", "newStart", "newLines", "lines"]
+                }
+              }
+            },
+            "required": ["path", "status", "binary", "additions", "deletions"]
+          }
+        }
+      },
+      "required": ["files"]
+    }
+  },
+  "required": ["commit", "diff"]
+}

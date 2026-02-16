@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-branch.json",
+  "title": "Git Branch Output",
+  "type": "object",
+  "properties": {
+    "branches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "current": { "type": "boolean" },
+          "upstream": { "type": "string" },
+          "ahead": { "type": "integer" },
+          "behind": { "type": "integer" },
+          "lastCommit": { "type": "string" }
+        },
+        "required": ["name", "current"]
+      }
+    },
+    "current": { "type": "string" }
+  },
+  "required": ["branches", "current"]
+}

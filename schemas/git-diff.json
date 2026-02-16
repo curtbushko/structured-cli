@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-diff.json",
+  "title": "Git Diff Output",
+  "type": "object",
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "oldPath": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["added", "modified", "deleted", "renamed"]
+          },
+          "binary": { "type": "boolean" },
+          "additions": { "type": "integer" },
+          "deletions": { "type": "integer" },
+          "hunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "oldStart": { "type": "integer" },
+                "oldLines": { "type": "integer" },
+                "newStart": { "type": "integer" },
+                "newLines": { "type": "integer" },
+                "header": { "type": "string" },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["context", "add", "delete"]
+                      },
+                      "content": { "type": "string" },
+                      "oldLineNo": { "type": "integer" },
+                      "newLineNo": { "type": "integer" }
+                    },
+                    "required": ["type", "content"]
+                  }
+                }
+              },
+              "required": ["oldStart", "oldLines", "newStart", "newLines", "lines"]
+            }
+          }
+        },
+        "required": ["path", "status", "binary", "additions", "deletions"]
+      }
+    }
+  },
+  "required": ["files"]
+}

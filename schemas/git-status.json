@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-status.json",
+  "title": "Git Status Output",
+  "type": "object",
+  "properties": {
+    "branch": { "type": "string" },
+    "upstream": { "type": ["string", "null"] },
+    "ahead": { "type": "integer" },
+    "behind": { "type": "integer" },
+    "staged": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["added", "modified", "deleted", "renamed", "copied"]
+          }
+        },
+        "required": ["file", "status"]
+      }
+    },
+    "modified": { "type": "array", "items": { "type": "string" } },
+    "deleted": { "type": "array", "items": { "type": "string" } },
+    "untracked": { "type": "array", "items": { "type": "string" } },
+    "conflicts": { "type": "array", "items": { "type": "string" } },
+    "clean": { "type": "boolean" }
+  },
+  "required": ["branch", "staged", "modified", "deleted", "untracked", "conflicts", "clean"]
+}
