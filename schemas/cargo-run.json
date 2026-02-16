@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-run.json",
+  "title": "Cargo Run Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build and run succeeded"
+    },
+    "build_success": {
+      "type": "boolean",
+      "description": "Whether the build phase succeeded"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Path to the executed binary"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Build errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "The error code"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the error occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the error occurred"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "output": {
+      "type": "string",
+      "description": "Program stdout output"
+    }
+  },
+  "required": ["success", "build_success", "errors"]
+}

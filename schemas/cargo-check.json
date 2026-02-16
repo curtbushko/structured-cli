@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-check.json",
+  "title": "Cargo Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the check succeeded"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Compilation errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "The error code"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered message"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Compilation warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The warning message"
+          },
+          "code": {
+            "type": "string",
+            "description": "The warning code"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered message"
+          }
+        },
+        "required": ["message"]
+      }
+    }
+  },
+  "required": ["success", "errors", "warnings"]
+}

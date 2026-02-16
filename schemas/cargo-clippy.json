@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-clippy.json",
+  "title": "Cargo Clippy Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether clippy completed without errors"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Clippy lint warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The diagnostic message from clippy"
+          },
+          "code": {
+            "type": "string",
+            "description": "The lint code (e.g., clippy::unwrap_used)"
+          },
+          "level": {
+            "type": "string",
+            "description": "The diagnostic level (warning, error)"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the diagnostic occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the diagnostic occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the diagnostic occurred"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered message"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Clippy lint errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The diagnostic message from clippy"
+          },
+          "code": {
+            "type": "string",
+            "description": "The lint code"
+          },
+          "level": {
+            "type": "string",
+            "description": "The diagnostic level"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the diagnostic occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the diagnostic occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the diagnostic occurred"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered message"
+          }
+        },
+        "required": ["message"]
+      }
+    }
+  },
+  "required": ["success", "warnings", "errors"]
+}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/cargo"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/docker"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
@@ -92,6 +93,15 @@ func run() int {
 	registry.Register(python.NewUVInstallParser())
 	registry.Register(python.NewUVRunParser())
 	registry.Register(python.NewBlackParser())
+
+	// Register Cargo parsers
+	registry.Register(cargo.NewClippyParser())
+	registry.Register(cargo.NewRunParser())
+	registry.Register(cargo.NewAddParser())
+	registry.Register(cargo.NewRemoveParser())
+	registry.Register(cargo.NewFmtParser())
+	registry.Register(cargo.NewDocParser())
+	registry.Register(cargo.NewCheckParser())
 
 	// Register Docker parsers
 	registry.Register(docker.NewPSParser())

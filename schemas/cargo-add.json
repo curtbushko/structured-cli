@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-add.json",
+  "title": "Cargo Add Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the add operation succeeded"
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Added dependencies",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The crate name"
+          },
+          "version": {
+            "type": "string",
+            "description": "The version that was added"
+          },
+          "features": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The enabled features"
+          },
+          "dev": {
+            "type": "boolean",
+            "description": "Whether this is a dev dependency"
+          },
+          "build": {
+            "type": "boolean",
+            "description": "Whether this is a build dependency"
+          }
+        },
+        "required": ["name", "version"]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["success", "dependencies", "errors"]
+}

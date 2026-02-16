@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-fmt.json",
+  "title": "Cargo Fmt Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all files are correctly formatted"
+    },
+    "files": {
+      "type": "array",
+      "description": "Files with formatting issues",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The path to the file"
+          },
+          "diff": {
+            "type": "string",
+            "description": "The formatting diff if available"
+          }
+        },
+        "required": ["path"]
+      }
+    }
+  },
+  "required": ["success", "files"]
+}

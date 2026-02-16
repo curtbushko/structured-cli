@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-remove.json",
+  "title": "Cargo Remove Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the remove operation succeeded"
+    },
+    "removed": {
+      "type": "array",
+      "description": "Names of removed dependencies",
+      "items": { "type": "string" }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error messages",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["success", "removed", "errors"]
+}

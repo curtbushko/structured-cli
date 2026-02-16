@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-doc.json",
+  "title": "Cargo Doc Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether doc generation succeeded"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Documentation warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The warning message"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Documentation errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "The error code"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "generated_docs": {
+      "type": "array",
+      "description": "Paths to generated documentation",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["success", "warnings", "errors"]
+}

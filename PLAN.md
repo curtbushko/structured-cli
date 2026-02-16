@@ -130,15 +130,15 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `black --check` parser + schema
 
 ### Phase 15: Cargo (Rust) Parsers
-- [ ] `cargo build` parser + schema
-- [ ] `cargo test` parser + schema
-- [ ] `cargo clippy` parser + schema
-- [ ] `cargo run` parser + schema
-- [ ] `cargo add` parser + schema
-- [ ] `cargo remove` parser + schema
-- [ ] `cargo fmt` parser + schema
-- [ ] `cargo doc` parser + schema
-- [ ] `cargo check` parser + schema
+- [x] `cargo build` parser + schema
+- [x] `cargo test` parser + schema
+- [x] `cargo clippy` parser + schema
+- [x] `cargo run` parser + schema
+- [x] `cargo add` parser + schema
+- [x] `cargo remove` parser + schema
+- [x] `cargo fmt` parser + schema
+- [x] `cargo doc` parser + schema
+- [x] `cargo check` parser + schema
 
 ### Phase 16: Make/Just Parsers
 - [ ] `make` parser + schema
