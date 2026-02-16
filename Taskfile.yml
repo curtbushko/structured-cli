@@ -21,7 +21,7 @@ tasks:
     desc: Build the binary
     cmds:
       - mkdir -p {{.ROOT_DIR}}/bin/{{.OS}}-{{.ARCH}}
-      - GOOS={{.OS}} GOARCH={{.ARCH}} go build -o {{.ROOT_DIR}}/bin/{{.OS}}-{{.ARCH}}/{{.BINARY}}
+      - GOOS={{.OS}} GOARCH={{.ARCH}} go build -o {{.ROOT_DIR}}/bin/{{.OS}}-{{.ARCH}}/{{.BINARY}} ./cmd/structured-cli
       - chmod +x {{.ROOT_DIR}}/bin/{{.OS}}-{{.ARCH}}/{{.BINARY}}
 
   run:
@@ -37,7 +37,7 @@ tasks:
   install:
     desc: Install the binary using go install
     cmds:
-      - GOOS={{.OS}} GOARCH={{.ARCH}} go install
+      - GOOS={{.OS}} GOARCH={{.ARCH}} go install ./cmd/structured-cli
 
   lint:
     desc: Run all linters
