@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
@@ -48,6 +49,13 @@ func run() int {
 	registry.Register(golang.NewModTidyParser())
 	registry.Register(golang.NewFmtParser())
 	registry.Register(golang.NewGenerateParser())
+
+	// Register build tool parsers
+	registry.Register(build.NewTSCParser())
+	registry.Register(build.NewESBuildParser())
+	registry.Register(build.NewViteParser())
+	registry.Register(build.NewWebpackParser())
+	registry.Register(build.NewCargoParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)

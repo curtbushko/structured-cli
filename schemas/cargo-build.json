@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-build.json",
+  "title": "Cargo Build Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build succeeded"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Compilation errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The error message from the compiler"
+          },
+          "code": {
+            "type": "string",
+            "description": "The error code (e.g., E0425)"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the error occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the error occurred"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered error message"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Compilation warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The warning message from the compiler"
+          },
+          "code": {
+            "type": "string",
+            "description": "The warning/lint code (e.g., unused_variables)"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the warning occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the warning occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the warning occurred"
+          },
+          "rendered": {
+            "type": "string",
+            "description": "The human-readable rendered warning message"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "Compiled artifacts",
+      "items": {
+        "type": "object",
+        "properties": {
+          "package_id": {
+            "type": "string",
+            "description": "The unique identifier for the package"
+          },
+          "target": {
+            "type": "object",
+            "description": "Information about the compilation target",
+            "properties": {
+              "kind": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "The target kind (e.g., lib, bin, example)"
+              },
+              "crate_types": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "The list of crate types"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the target"
+              },
+              "src_path": {
+                "type": "string",
+                "description": "The path to the target's source file"
+              },
+              "edition": {
+                "type": "string",
+                "description": "The Rust edition (e.g., 2018, 2021)"
+              }
+            },
+            "required": ["name"]
+          },
+          "profile": {
+            "type": "object",
+            "description": "Compilation profile settings",
+            "properties": {
+              "opt_level": {
+                "type": "string",
+                "description": "The optimization level"
+              },
+              "debuginfo": {
+                "type": "integer",
+                "description": "The debug info level"
+              },
+              "debug_assertions": {
+                "type": "boolean",
+                "description": "Whether debug assertions are enabled"
+              },
+              "overflow_checks": {
+                "type": "boolean",
+                "description": "Whether overflow checks are enabled"
+              },
+              "test": {
+                "type": "boolean",
+                "description": "Whether this is a test build"
+              }
+            }
+          },
+          "features": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The enabled features for this artifact"
+          },
+          "filenames": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The paths to generated artifact files"
+          },
+          "executable": {
+            "type": "string",
+            "description": "The path to the generated executable, if applicable"
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "Whether the artifact was already up to date"
+          }
+        },
+        "required": ["package_id", "target", "filenames", "fresh"]
+      }
+    },
+    "build_scripts": {
+      "type": "array",
+      "description": "Build script outputs",
+      "items": {
+        "type": "object",
+        "properties": {
+          "package_id": {
+            "type": "string",
+            "description": "The unique identifier for the package"
+          },
+          "linked_libs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Libraries to link"
+          },
+          "linked_paths": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Paths to search for libraries"
+          },
+          "cfgs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Configuration flags to pass to the compiler"
+          },
+          "env": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "description": "Environment variables to set"
+          },
+          "out_dir": {
+            "type": "string",
+            "description": "The path to the build script's output directory"
+          }
+        },
+        "required": ["package_id"]
+      }
+    }
+  },
+  "required": ["success", "errors", "warnings", "artifacts"]
+}

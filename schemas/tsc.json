@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/tsc.json",
+  "title": "TypeScript Compiler Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the compilation succeeded"
+    },
+    "errors": {
+      "type": "array",
+      "description": "TypeScript compilation errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the error occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the error occurred"
+          },
+          "code": {
+            "type": "string",
+            "description": "The TypeScript error code (e.g., TS2322)"
+          },
+          "message": {
+            "type": "string",
+            "description": "The error message from the compiler"
+          }
+        },
+        "required": ["file", "line", "column", "code", "message"]
+      }
+    }
+  },
+  "required": ["success", "errors"]
+}

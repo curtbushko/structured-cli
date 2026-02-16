@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/vite-build.json",
+  "title": "Vite Build Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build succeeded"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Build errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "string",
+            "description": "The Vite/Rollup plugin that produced the error"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the error occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the error occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "The error message from the bundler"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Build warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "plugin": {
+            "type": "string",
+            "description": "The Vite/Rollup plugin that produced the warning"
+          },
+          "file": {
+            "type": "string",
+            "description": "The source file where the warning occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the warning occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the warning occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "The warning message from the bundler"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "description": "Generated output files",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The path to the output file"
+          },
+          "size": {
+            "type": "integer",
+            "description": "The size of the output file in bytes"
+          },
+          "gzipSize": {
+            "type": "integer",
+            "description": "The gzip-compressed size of the output file in bytes"
+          }
+        },
+        "required": ["path", "size", "gzipSize"]
+      }
+    },
+    "duration": {
+      "type": "number",
+      "description": "Build duration in milliseconds"
+    },
+    "modules": {
+      "type": "integer",
+      "description": "Number of modules transformed during the build"
+    }
+  },
+  "required": ["success", "errors", "warnings", "outputs"]
+}

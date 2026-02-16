@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/webpack.json",
+  "title": "Webpack Bundler Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build succeeded"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Build errors",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the error occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the error occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "The error message from the bundler"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Build warnings",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the warning occurred"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the warning occurred"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the warning occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "The warning message from the bundler"
+          }
+        },
+        "required": ["message"]
+      }
+    },
+    "assets": {
+      "type": "array",
+      "description": "Generated output files",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the output file"
+          },
+          "size": {
+            "type": "integer",
+            "description": "The size of the output file in bytes"
+          },
+          "emitted": {
+            "type": "boolean",
+            "description": "Whether the file was written to disk"
+          },
+          "chunkNames": {
+            "type": "array",
+            "description": "Names of chunks that contributed to this asset",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["name", "size", "emitted"]
+      }
+    },
+    "chunks": {
+      "type": "array",
+      "description": "Webpack chunks",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the chunk file"
+          },
+          "chunkName": {
+            "type": "string",
+            "description": "The logical name of the chunk"
+          },
+          "size": {
+            "type": "integer",
+            "description": "The size of the chunk in bytes"
+          },
+          "entry": {
+            "type": "boolean",
+            "description": "Whether this is an entry chunk"
+          },
+          "initial": {
+            "type": "boolean",
+            "description": "Whether this is an initial chunk"
+          },
+          "rendered": {
+            "type": "boolean",
+            "description": "Whether the chunk was rendered"
+          }
+        },
+        "required": ["name", "size"]
+      }
+    },
+    "modules": {
+      "type": "integer",
+      "description": "Number of modules processed"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Build duration in milliseconds"
+    }
+  },
+  "required": ["success", "errors", "warnings", "assets"]
+}

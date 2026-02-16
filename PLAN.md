@@ -73,11 +73,11 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `go generate` parser + schema
 
 ### Phase 8: Build Tool Parsers
-- [ ] `tsc` parser + schema
-- [ ] `esbuild` parser + schema
-- [ ] `vite build` parser + schema
-- [ ] `webpack` parser + schema
-- [ ] `cargo build` parser + schema
+- [x] `tsc` parser + schema
+- [x] `esbuild` parser + schema
+- [x] `vite build` parser + schema
+- [x] `webpack` parser + schema
+- [x] `cargo build` parser + schema
 
 ### Phase 9: Linter Parsers
 - [ ] `eslint` parser + schema
