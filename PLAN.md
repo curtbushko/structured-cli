@@ -102,13 +102,13 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [ ] Implement streaming command buffering
 
 ### Phase 12: NPM Parsers
-- [ ] `npm install` parser + schema
-- [ ] `npm audit` parser + schema
-- [ ] `npm outdated` parser + schema
-- [ ] `npm list` parser + schema
-- [ ] `npm run` parser + schema
-- [ ] `npm test` parser + schema
-- [ ] `npm init` parser + schema
+- [x] `npm install` parser + schema
+- [x] `npm audit` parser + schema
+- [x] `npm outdated` parser + schema
+- [x] `npm list` parser + schema
+- [x] `npm run` parser + schema
+- [x] `npm test` parser + schema
+- [x] `npm init` parser + schema
 
 ### Phase 13: Docker Parsers
 - [ ] `docker ps` parser + schema

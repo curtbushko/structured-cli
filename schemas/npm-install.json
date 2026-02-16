@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-install.json",
+  "title": "NPM Install Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether installation completed successfully without vulnerabilities"
+    },
+    "packages_added": {
+      "type": "integer",
+      "description": "Number of packages added"
+    },
+    "packages_removed": {
+      "type": "integer",
+      "description": "Number of packages removed"
+    },
+    "packages_changed": {
+      "type": "integer",
+      "description": "Number of packages changed"
+    },
+    "packages_audited": {
+      "type": "integer",
+      "description": "Number of packages audited"
+    },
+    "funding": {
+      "type": "integer",
+      "description": "Number of packages seeking funding"
+    },
+    "vulnerabilities": {
+      "type": "object",
+      "description": "Vulnerability summary by severity",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of vulnerabilities"
+        },
+        "low": {
+          "type": "integer",
+          "description": "Number of low severity vulnerabilities"
+        },
+        "moderate": {
+          "type": "integer",
+          "description": "Number of moderate severity vulnerabilities"
+        },
+        "high": {
+          "type": "integer",
+          "description": "Number of high severity vulnerabilities"
+        },
+        "critical": {
+          "type": "integer",
+          "description": "Number of critical severity vulnerabilities"
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "List of installation warnings",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "packages_added", "vulnerabilities"]
+}

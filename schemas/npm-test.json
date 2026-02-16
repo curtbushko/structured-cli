@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-test.json",
+  "title": "NPM Test Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether tests passed"
+    },
+    "output": {
+      "type": "string",
+      "description": "Test output"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code from tests"
+    }
+  },
+  "required": ["success", "output"]
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-init.json",
+  "title": "NPM Init Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether initialization succeeded"
+    },
+    "package_name": {
+      "type": "string",
+      "description": "Created package name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Initial version"
+    },
+    "description": {
+      "type": "string",
+      "description": "Package description"
+    },
+    "entry_point": {
+      "type": "string",
+      "description": "Main entry point"
+    },
+    "test_command": {
+      "type": "string",
+      "description": "Test command"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Git repository URL"
+    },
+    "keywords": {
+      "type": "array",
+      "description": "Package keywords",
+      "items": {
+        "type": "string"
+      }
+    },
+    "author": {
+      "type": "string",
+      "description": "Package author"
+    },
+    "license": {
+      "type": "string",
+      "description": "Package license"
+    }
+  },
+  "required": ["success", "package_name", "version"]
+}

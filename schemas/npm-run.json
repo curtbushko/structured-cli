@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-run.json",
+  "title": "NPM Run Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the script ran successfully"
+    },
+    "script": {
+      "type": "string",
+      "description": "Script name that was run"
+    },
+    "output": {
+      "type": "string",
+      "description": "Script output"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code from the script"
+    }
+  },
+  "required": ["success", "script", "output"]
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-audit.json",
+  "title": "NPM Audit Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether audit found no vulnerabilities"
+    },
+    "vulnerabilities": {
+      "type": "array",
+      "description": "List of vulnerabilities found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package name with the vulnerability"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "moderate", "high", "critical"],
+            "description": "Vulnerability severity"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short description of the vulnerability"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL for more information"
+          },
+          "via": {
+            "type": "array",
+            "description": "Dependency path introducing the vulnerability",
+            "items": {
+              "type": "string"
+            }
+          },
+          "range": {
+            "type": "string",
+            "description": "Affected version range"
+          },
+          "fix_available": {
+            "type": "boolean",
+            "description": "Whether a fix is available"
+          }
+        },
+        "required": ["name", "severity"]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Vulnerability count summary",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of vulnerabilities"
+        },
+        "low": {
+          "type": "integer",
+          "description": "Number of low severity vulnerabilities"
+        },
+        "moderate": {
+          "type": "integer",
+          "description": "Number of moderate severity vulnerabilities"
+        },
+        "high": {
+          "type": "integer",
+          "description": "Number of high severity vulnerabilities"
+        },
+        "critical": {
+          "type": "integer",
+          "description": "Number of critical severity vulnerabilities"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Audit metadata",
+      "properties": {
+        "total_dependencies": {
+          "type": "integer",
+          "description": "Number of dependencies scanned"
+        },
+        "dev_dependencies": {
+          "type": "integer",
+          "description": "Number of dev dependencies scanned"
+        },
+        "optional_dependencies": {
+          "type": "integer",
+          "description": "Number of optional dependencies scanned"
+        }
+      }
+    }
+  },
+  "required": ["success", "vulnerabilities", "summary"]
+}

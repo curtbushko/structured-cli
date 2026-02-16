@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-list.json",
+  "title": "NPM List Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether list command succeeded without problems"
+    },
+    "name": {
+      "type": "string",
+      "description": "Root package name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Root package version"
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of direct dependencies",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
+    },
+    "problems": {
+      "type": "array",
+      "description": "List of problems found",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "name", "version", "dependencies"],
+  "$defs": {
+    "dependency": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Package name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Installed version"
+        },
+        "resolved": {
+          "type": "string",
+          "description": "Resolved URL"
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "Nested dependencies",
+          "items": {
+            "$ref": "#/$defs/dependency"
+          }
+        }
+      },
+      "required": ["name", "version"]
+    }
+  }
+}

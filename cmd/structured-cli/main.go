@@ -10,6 +10,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/npm"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/test"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
 	"github.com/curtbushko/structured-cli/internal/application"
@@ -73,6 +74,15 @@ func run() int {
 	registry.Register(test.NewVitestParser())
 	registry.Register(test.NewMochaParser())
 	registry.Register(test.NewCargoTestParser())
+
+	// Register npm parsers
+	registry.Register(npm.NewInstallParser())
+	registry.Register(npm.NewAuditParser())
+	registry.Register(npm.NewOutdatedParser())
+	registry.Register(npm.NewListParser())
+	registry.Register(npm.NewRunParser())
+	registry.Register(npm.NewTestParser())
+	registry.Register(npm.NewInitParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)

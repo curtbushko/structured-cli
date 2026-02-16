@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/npm-outdated.json",
+  "title": "NPM Outdated Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all packages are up to date"
+    },
+    "packages": {
+      "type": "array",
+      "description": "List of outdated packages",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Package name"
+          },
+          "current": {
+            "type": "string",
+            "description": "Currently installed version"
+          },
+          "wanted": {
+            "type": "string",
+            "description": "Wanted version based on semver range"
+          },
+          "latest": {
+            "type": "string",
+            "description": "Latest available version"
+          },
+          "location": {
+            "type": "string",
+            "description": "Location in the dependency tree"
+          },
+          "type": {
+            "type": "string",
+            "description": "Dependency type (dependencies, devDependencies, etc.)"
+          }
+        },
+        "required": ["name", "current", "wanted", "latest"]
+      }
+    }
+  },
+  "required": ["success", "packages"]
+}
