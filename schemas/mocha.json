@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/mocha.json",
+  "title": "Mocha Output",
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "integer",
+      "description": "Total number of tests that passed"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Total number of tests that failed"
+    },
+    "pending": {
+      "type": "integer",
+      "description": "Total number of pending tests"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Total time in milliseconds for the test run"
+    },
+    "suites": {
+      "type": "array",
+      "description": "Test suite results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the test suite"
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "Whether all tests in the suite passed"
+          },
+          "tests": {
+            "type": "array",
+            "description": "Individual test case results",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Title of the test"
+                },
+                "state": {
+                  "type": "string",
+                  "description": "Test state (passed, failed, pending)"
+                },
+                "duration": {
+                  "type": "number",
+                  "description": "Time in milliseconds taken to run the test"
+                },
+                "error": {
+                  "type": "string",
+                  "description": "Error message if the test failed"
+                }
+              },
+              "required": ["title", "state"]
+            }
+          }
+        },
+        "required": ["title", "passed", "tests"]
+      }
+    }
+  },
+  "required": ["passed", "failed", "pending", "suites"]
+}

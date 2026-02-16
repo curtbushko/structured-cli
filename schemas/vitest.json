@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/vitest.json",
+  "title": "Vitest Output",
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "integer",
+      "description": "Total number of tests that passed"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Total number of tests that failed"
+    },
+    "skipped": {
+      "type": "integer",
+      "description": "Total number of tests that were skipped"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Total time in seconds for the test run"
+    },
+    "files": {
+      "type": "array",
+      "description": "Test file results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the test file"
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "Whether all tests in the file passed"
+          },
+          "tests": {
+            "type": "array",
+            "description": "Individual test case results",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the test"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Test status (pass, fail, skip)"
+                },
+                "duration": {
+                  "type": "number",
+                  "description": "Time in milliseconds taken to run the test"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Failure message if applicable"
+                }
+              },
+              "required": ["name", "status"]
+            }
+          }
+        },
+        "required": ["name", "passed", "tests"]
+      }
+    }
+  },
+  "required": ["passed", "failed", "skipped", "files"]
+}

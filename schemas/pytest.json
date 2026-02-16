@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/pytest.json",
+  "title": "Pytest Output",
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "integer",
+      "description": "Total number of tests that passed"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Total number of tests that failed"
+    },
+    "skipped": {
+      "type": "integer",
+      "description": "Total number of tests that were skipped"
+    },
+    "errors": {
+      "type": "integer",
+      "description": "Total number of tests that had errors"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Total time in seconds for the test run"
+    },
+    "tests": {
+      "type": "array",
+      "description": "Individual test case results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the test function"
+          },
+          "file": {
+            "type": "string",
+            "description": "The test file containing this test"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "The test outcome (passed, failed, skipped, error)"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Time in seconds taken to run the test"
+          },
+          "message": {
+            "type": "string",
+            "description": "Failure/error message if applicable"
+          }
+        },
+        "required": ["name", "file", "outcome"]
+      }
+    }
+  },
+  "required": ["passed", "failed", "skipped", "tests"]
+}

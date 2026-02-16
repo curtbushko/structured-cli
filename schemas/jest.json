@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/jest.json",
+  "title": "Jest Output",
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "integer",
+      "description": "Total number of tests that passed"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Total number of tests that failed"
+    },
+    "skipped": {
+      "type": "integer",
+      "description": "Total number of tests that were skipped"
+    },
+    "total": {
+      "type": "integer",
+      "description": "Total number of tests"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Total time in seconds for the test run"
+    },
+    "suites": {
+      "type": "array",
+      "description": "Test suite results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the test suite (usually the file)"
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "Whether all tests in the suite passed"
+          },
+          "tests": {
+            "type": "array",
+            "description": "Individual test case results",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the test"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Test status (passed, failed, skipped)"
+                },
+                "duration": {
+                  "type": "number",
+                  "description": "Time in milliseconds taken to run the test"
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Failure message if applicable"
+                }
+              },
+              "required": ["name", "status"]
+            }
+          }
+        },
+        "required": ["name", "passed", "tests"]
+      }
+    }
+  },
+  "required": ["passed", "failed", "skipped", "total", "suites"]
+}

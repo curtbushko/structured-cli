@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/cargo-test.json",
+  "title": "Cargo Test Output",
+  "type": "object",
+  "properties": {
+    "passed": {
+      "type": "integer",
+      "description": "Total number of tests that passed"
+    },
+    "failed": {
+      "type": "integer",
+      "description": "Total number of tests that failed"
+    },
+    "ignored": {
+      "type": "integer",
+      "description": "Total number of tests that were ignored"
+    },
+    "measured": {
+      "type": "integer",
+      "description": "Number of benchmark tests measured"
+    },
+    "filtered": {
+      "type": "integer",
+      "description": "Number of tests filtered out"
+    },
+    "duration": {
+      "type": "number",
+      "description": "Total time in seconds for the test run"
+    },
+    "tests": {
+      "type": "array",
+      "description": "Individual test case results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full name of the test (module::test_name)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Test status (ok, FAILED, ignored)"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Time in seconds taken to run the test"
+          },
+          "message": {
+            "type": "string",
+            "description": "Failure message if applicable"
+          }
+        },
+        "required": ["name", "status"]
+      }
+    }
+  },
+  "required": ["passed", "failed", "ignored", "tests"]
+}

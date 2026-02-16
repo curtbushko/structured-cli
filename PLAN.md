@@ -88,11 +88,11 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `mypy` parser + schema
 
 ### Phase 10: Test Runner Parsers
-- [ ] `pytest` parser + schema
-- [ ] `jest` parser + schema
-- [ ] `vitest` parser + schema
-- [ ] `mocha` parser + schema
-- [ ] `cargo test` parser + schema
+- [x] `pytest` parser + schema
+- [x] `jest` parser + schema
+- [x] `vitest` parser + schema
+- [x] `mocha` parser + schema
+- [x] `cargo test` parser + schema
 
 ### Phase 11: Schema Validation & Error Handling
 - [ ] Implement schema validation service
