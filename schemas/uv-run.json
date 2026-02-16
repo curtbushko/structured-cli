@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/uv-run.json",
+  "title": "UV Run Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the command ran successfully"
+    },
+    "script": {
+      "type": "string",
+      "description": "The script or command that was run"
+    },
+    "output": {
+      "type": "string",
+      "description": "The command output"
+    },
+    "installed_packages": {
+      "type": "array",
+      "description": "Packages installed before running",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The package name"
+          },
+          "version": {
+            "type": "string",
+            "description": "The installed version"
+          }
+        },
+        "required": ["name", "version"]
+      }
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code from the command"
+    }
+  },
+  "required": ["success", "output"]
+}

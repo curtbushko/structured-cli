@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/pip-install.json",
+  "title": "Pip Install Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether installation completed successfully"
+    },
+    "packages_installed": {
+      "type": "array",
+      "description": "List of packages installed",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The package name"
+          },
+          "version": {
+            "type": "string",
+            "description": "The installed version"
+          }
+        },
+        "required": ["name", "version"]
+      }
+    },
+    "requirements_file": {
+      "type": "string",
+      "description": "Requirements file used, if any"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Installation warnings",
+      "items": {
+        "type": "string"
+      }
+    },
+    "already_satisfied": {
+      "type": "array",
+      "description": "Packages already satisfied",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["success", "packages_installed"]
+}

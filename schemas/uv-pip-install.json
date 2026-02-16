@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/uv-pip-install.json",
+  "title": "UV Pip Install Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether installation completed successfully"
+    },
+    "packages_installed": {
+      "type": "array",
+      "description": "List of packages installed",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The package name"
+          },
+          "version": {
+            "type": "string",
+            "description": "The installed version"
+          }
+        },
+        "required": ["name", "version"]
+      }
+    },
+    "packages_uninstalled": {
+      "type": "array",
+      "description": "List of packages uninstalled",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cached": {
+      "type": "integer",
+      "description": "Number of packages installed from cache"
+    },
+    "downloaded": {
+      "type": "integer",
+      "description": "Number of packages downloaded"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Installation warnings",
+      "items": {
+        "type": "string"
+      }
+    },
+    "already_satisfied": {
+      "type": "boolean",
+      "description": "Requirements already satisfied"
+    }
+  },
+  "required": ["success", "packages_installed"]
+}

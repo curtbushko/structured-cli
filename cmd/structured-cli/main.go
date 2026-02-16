@@ -12,6 +12,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/npm"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/python"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/test"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
 	"github.com/curtbushko/structured-cli/internal/application"
@@ -84,6 +85,13 @@ func run() int {
 	registry.Register(npm.NewRunParser())
 	registry.Register(npm.NewTestParser())
 	registry.Register(npm.NewInitParser())
+
+	// Register Python parsers
+	registry.Register(python.NewPipInstallParser())
+	registry.Register(python.NewPipAuditParser())
+	registry.Register(python.NewUVInstallParser())
+	registry.Register(python.NewUVRunParser())
+	registry.Register(python.NewBlackParser())
 
 	// Register Docker parsers
 	registry.Register(docker.NewPSParser())

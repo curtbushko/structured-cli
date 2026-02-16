@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/black.json",
+  "title": "Black Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all files are properly formatted"
+    },
+    "files_checked": {
+      "type": "integer",
+      "description": "Number of files checked"
+    },
+    "files_would_reformat": {
+      "type": "array",
+      "description": "Files that would be reformatted",
+      "items": {
+        "type": "string"
+      }
+    },
+    "files_unchanged": {
+      "type": "integer",
+      "description": "Number of files already formatted"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Errors encountered during checking",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The file where the error occurred"
+          },
+          "message": {
+            "type": "string",
+            "description": "The error message"
+          }
+        },
+        "required": ["file", "message"]
+      }
+    }
+  },
+  "required": ["success", "files_would_reformat"]
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/pip-audit.json",
+  "title": "Pip-Audit Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether audit found no vulnerabilities"
+    },
+    "vulnerabilities": {
+      "type": "array",
+      "description": "List of vulnerabilities found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The package name with the vulnerability"
+          },
+          "version": {
+            "type": "string",
+            "description": "The installed version with the vulnerability"
+          },
+          "id": {
+            "type": "string",
+            "description": "The vulnerability identifier (e.g., CVE, GHSA)"
+          },
+          "description": {
+            "type": "string",
+            "description": "The vulnerability description"
+          },
+          "fix_versions": {
+            "type": "array",
+            "description": "Versions that fix this vulnerability",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aliases": {
+            "type": "array",
+            "description": "Other identifiers for this vulnerability",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["name", "version", "id"]
+      }
+    },
+    "packages_scanned": {
+      "type": "integer",
+      "description": "Number of packages scanned"
+    },
+    "summary": {
+      "type": "object",
+      "description": "Vulnerability count summary",
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Total number of vulnerabilities found"
+        },
+        "fix_available": {
+          "type": "integer",
+          "description": "Number of vulnerabilities with fixes available"
+        }
+      }
+    }
+  },
+  "required": ["success", "vulnerabilities"]
+}

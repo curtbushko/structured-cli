@@ -123,11 +123,11 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `docker compose ps` parser + schema
 
 ### Phase 14: Python Parsers
-- [ ] `pip install` parser + schema
-- [ ] `pip-audit` parser + schema
-- [ ] `uv pip install` parser + schema
-- [ ] `uv run` parser + schema
-- [ ] `black --check` parser + schema
+- [x] `pip install` parser + schema
+- [x] `pip-audit` parser + schema
+- [x] `uv pip install` parser + schema
+- [x] `uv run` parser + schema
+- [x] `black --check` parser + schema
 
 ### Phase 15: Cargo (Rust) Parsers
 - [ ] `cargo build` parser + schema
