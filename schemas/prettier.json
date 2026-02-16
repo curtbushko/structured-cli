@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/prettier.json",
+  "title": "Prettier Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether all files are properly formatted"
+    },
+    "unformatted": {
+      "type": "array",
+      "description": "List of files that need formatting",
+      "items": {
+        "type": "string",
+        "description": "Path to an unformatted file"
+      }
+    }
+  },
+  "required": ["success", "unformatted"]
+}

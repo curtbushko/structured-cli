@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/mypy.json",
+  "title": "Mypy Type Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether type checking completed without errors"
+    },
+    "errors": {
+      "type": "array",
+      "description": "List of type errors found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the error was found"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the error was found"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning", "note"],
+            "description": "The severity level of the error"
+          },
+          "message": {
+            "type": "string",
+            "description": "The description of the error"
+          },
+          "code": {
+            "type": "string",
+            "description": "The optional mypy error code (e.g., arg-type, return-value)"
+          }
+        },
+        "required": ["file", "line", "severity", "message"]
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Summary line from mypy output"
+    }
+  },
+  "required": ["success", "errors", "summary"]
+}

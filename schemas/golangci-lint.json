@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/golangci-lint.json",
+  "title": "golangci-lint Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether linting completed without issues"
+    },
+    "issues": {
+      "type": "array",
+      "description": "List of lint issues found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the issue was found"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the issue was found"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the issue was found"
+          },
+          "message": {
+            "type": "string",
+            "description": "The description of the issue"
+          },
+          "linter": {
+            "type": "string",
+            "description": "The linter that found the issue (e.g., errcheck, govet)"
+          },
+          "severity": {
+            "type": "string",
+            "description": "The severity level of the issue"
+          }
+        },
+        "required": ["file", "line", "message", "linter"]
+      }
+    }
+  },
+  "required": ["success", "issues"]
+}

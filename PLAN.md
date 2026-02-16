@@ -80,12 +80,12 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `cargo build` parser + schema
 
 ### Phase 9: Linter Parsers
-- [ ] `eslint` parser + schema
-- [ ] `prettier --check` parser + schema
-- [ ] `biome check` parser + schema
-- [ ] `golangci-lint` parser + schema
-- [ ] `ruff check` parser + schema
-- [ ] `mypy` parser + schema
+- [x] `eslint` parser + schema
+- [x] `prettier --check` parser + schema
+- [x] `biome check` parser + schema
+- [x] `golangci-lint` parser + schema
+- [x] `ruff check` parser + schema
+- [x] `mypy` parser + schema
 
 ### Phase 10: Test Runner Parsers
 - [ ] `pytest` parser + schema

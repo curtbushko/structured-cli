@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/eslint.json",
+  "title": "ESLint Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether linting completed without issues"
+    },
+    "issues": {
+      "type": "array",
+      "description": "List of lint issues found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the issue was found"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the issue was found"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the issue was found"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning"],
+            "description": "The severity level of the issue"
+          },
+          "message": {
+            "type": "string",
+            "description": "The description of the issue"
+          },
+          "rule": {
+            "type": "string",
+            "description": "The ESLint rule that was violated"
+          }
+        },
+        "required": ["file", "line", "column", "severity", "message", "rule"]
+      }
+    }
+  },
+  "required": ["success", "issues"]
+}

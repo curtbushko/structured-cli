@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/ruff.json",
+  "title": "Ruff Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether linting completed without issues"
+    },
+    "issues": {
+      "type": "array",
+      "description": "List of lint issues found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the issue was found"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the issue was found"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the issue was found"
+          },
+          "code": {
+            "type": "string",
+            "description": "The Ruff rule code (e.g., E501, F401)"
+          },
+          "message": {
+            "type": "string",
+            "description": "The description of the issue"
+          }
+        },
+        "required": ["file", "line", "column", "code", "message"]
+      }
+    }
+  },
+  "required": ["success", "issues"]
+}

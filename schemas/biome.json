@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/biome.json",
+  "title": "Biome Check Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the check completed without issues"
+    },
+    "issues": {
+      "type": "array",
+      "description": "List of issues found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The source file where the issue was found"
+          },
+          "line": {
+            "type": "integer",
+            "description": "The line number where the issue was found"
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column number where the issue was found"
+          },
+          "severity": {
+            "type": "string",
+            "description": "The severity level of the issue"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["lint", "format", "parse"],
+            "description": "The issue category"
+          },
+          "message": {
+            "type": "string",
+            "description": "The description of the issue"
+          },
+          "rule": {
+            "type": "string",
+            "description": "The Biome rule that was violated"
+          }
+        },
+        "required": ["file", "line", "column", "severity", "category", "message"]
+      }
+    }
+  },
+  "required": ["success", "issues"]
+}

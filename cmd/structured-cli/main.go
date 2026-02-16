@@ -9,6 +9,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
 	"github.com/curtbushko/structured-cli/internal/application"
 	"github.com/curtbushko/structured-cli/internal/domain"
@@ -56,6 +57,14 @@ func run() int {
 	registry.Register(build.NewViteParser())
 	registry.Register(build.NewWebpackParser())
 	registry.Register(build.NewCargoParser())
+
+	// Register linter parsers
+	registry.Register(lint.NewESLintParser())
+	registry.Register(lint.NewPrettierParser())
+	registry.Register(lint.NewBiomeParser())
+	registry.Register(lint.NewGolangCILintParser())
+	registry.Register(lint.NewRuffParser())
+	registry.Register(lint.NewMypyParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)
