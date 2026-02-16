@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-push.json",
+  "title": "Git Push Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether push was successful"
+    },
+    "remote": {
+      "type": "string",
+      "description": "Remote repository"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch pushed"
+    },
+    "commits": {
+      "type": "integer",
+      "description": "Number of commits pushed"
+    },
+    "newBranch": {
+      "type": "boolean",
+      "description": "Whether a new branch was created"
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Error messages"
+    }
+  },
+  "required": ["success"]
+}

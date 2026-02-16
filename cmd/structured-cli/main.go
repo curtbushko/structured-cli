@@ -31,6 +31,13 @@ func run() int {
 	registry.Register(git.NewDiffParser())
 	registry.Register(git.NewBranchParser())
 	registry.Register(git.NewShowParser())
+	registry.Register(git.NewAddParser())
+	registry.Register(git.NewCommitParser())
+	registry.Register(git.NewPushParser())
+	registry.Register(git.NewPullParser())
+	registry.Register(git.NewCheckoutParser())
+	registry.Register(git.NewBlameParser())
+	registry.Register(git.NewReflogParser())
 
 	// Create CLI handler (inbound adapter)
 	handler := cli.NewHandler(execRunner, registry)

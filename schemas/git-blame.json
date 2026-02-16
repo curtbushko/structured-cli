@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-blame.json",
+  "title": "Git Blame Output",
+  "type": "object",
+  "properties": {
+    "file": {
+      "type": "string",
+      "description": "File path"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "description": "Line number in current file"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Commit hash that last modified this line"
+          },
+          "author": {
+            "type": "string",
+            "description": "Author who last modified this line"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date when line was last modified"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content of the line"
+          }
+        },
+        "required": ["lineNumber", "hash", "author", "content"]
+      },
+      "description": "Blame information per line"
+    }
+  },
+  "required": ["file", "lines"]
+}

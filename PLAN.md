@@ -49,18 +49,18 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] Test `--json` flag triggers JSON output
 
 ### Phase 6: Git Parsers
-- [ ] `git status` parser + schema
-- [ ] `git log` parser + schema
-- [ ] `git diff` parser + schema
-- [ ] `git branch` parser + schema
-- [ ] `git show` parser + schema
-- [ ] `git add` parser + schema
-- [ ] `git commit` parser + schema
-- [ ] `git push` parser + schema
-- [ ] `git pull` parser + schema
-- [ ] `git checkout` parser + schema
-- [ ] `git blame` parser + schema
-- [ ] `git reflog` parser + schema
+- [x] `git status` parser + schema
+- [x] `git log` parser + schema
+- [x] `git diff` parser + schema
+- [x] `git branch` parser + schema
+- [x] `git show` parser + schema
+- [x] `git add` parser + schema
+- [x] `git commit` parser + schema
+- [x] `git push` parser + schema
+- [x] `git pull` parser + schema
+- [x] `git checkout` parser + schema
+- [x] `git blame` parser + schema
+- [x] `git reflog` parser + schema
 
 ### Phase 7: Go Parsers
 - [ ] `go build` parser + schema

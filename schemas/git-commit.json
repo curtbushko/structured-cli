@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-commit.json",
+  "title": "Git Commit Output",
+  "type": "object",
+  "properties": {
+    "hash": {
+      "type": "string",
+      "description": "Abbreviated commit hash"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch name"
+    },
+    "message": {
+      "type": "string",
+      "description": "Commit message"
+    },
+    "filesChanged": {
+      "type": "integer",
+      "description": "Number of files changed"
+    },
+    "insertions": {
+      "type": "integer",
+      "description": "Lines added"
+    },
+    "deletions": {
+      "type": "integer",
+      "description": "Lines removed"
+    }
+  },
+  "required": ["hash", "branch", "message"]
+}

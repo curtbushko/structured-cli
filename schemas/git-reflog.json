@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-reflog.json",
+  "title": "Git Reflog Output",
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "description": "Commit hash"
+          },
+          "index": {
+            "type": "integer",
+            "description": "Reflog index"
+          },
+          "action": {
+            "type": "string",
+            "description": "Action performed"
+          },
+          "message": {
+            "type": "string",
+            "description": "Reflog message"
+          },
+          "date": {
+            "type": "string",
+            "description": "Date of action"
+          }
+        },
+        "required": ["hash", "index", "action", "message"]
+      },
+      "description": "Reflog entries"
+    }
+  },
+  "required": ["entries"]
+}

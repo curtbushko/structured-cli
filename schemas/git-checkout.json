@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-checkout.json",
+  "title": "Git Checkout Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether checkout was successful"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch checked out"
+    },
+    "newBranch": {
+      "type": "boolean",
+      "description": "Whether a new branch was created"
+    },
+    "commit": {
+      "type": "string",
+      "description": "Commit hash if detached HEAD"
+    }
+  },
+  "required": ["success"]
+}

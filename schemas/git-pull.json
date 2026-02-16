@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-pull.json",
+  "title": "Git Pull Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether pull was successful"
+    },
+    "commits": {
+      "type": "integer",
+      "description": "Number of commits pulled"
+    },
+    "filesChanged": {
+      "type": "integer",
+      "description": "Number of files changed"
+    },
+    "insertions": {
+      "type": "integer",
+      "description": "Lines added"
+    },
+    "deletions": {
+      "type": "integer",
+      "description": "Lines removed"
+    },
+    "fastForward": {
+      "type": "boolean",
+      "description": "Whether it was fast-forward"
+    },
+    "conflicts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files with conflicts"
+    }
+  },
+  "required": ["success"]
+}

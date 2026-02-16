@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/git-add.json",
+  "title": "Git Add Output",
+  "type": "object",
+  "properties": {
+    "staged": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Files staged for commit"
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Error messages"
+    }
+  },
+  "required": ["staged"]
+}
