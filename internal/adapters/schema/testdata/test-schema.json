@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/test-schema.json",
+  "title": "Test Schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The name field"
+    },
+    "value": {
+      "type": "integer",
+      "description": "The value field"
+    }
+  },
+  "required": ["name"]
+}

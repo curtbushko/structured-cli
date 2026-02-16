@@ -16,37 +16,37 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 ## Implementation Checklist
 
 ### Phase 1: Project Setup
-- [ ] Initialize Go module (`github.com/yourorg/structured-cli`)
-- [ ] Create directory structure (`cmd/`, `internal/domain/`, `internal/ports/`, `internal/services/`, `internal/adapters/`)
-- [ ] Add `go.mod` with dependencies (cobra, jsonschema)
-- [ ] Create basic `main.go` composition root
+- [x] Initialize Go module (`github.com/yourorg/structured-cli`)
+- [x] Create directory structure (`cmd/`, `internal/domain/`, `internal/ports/`, `internal/services/`, `internal/adapters/`)
+- [x] Add `go.mod` with dependencies (cobra, jsonschema)
+- [x] Create basic `main.go` composition root
 
 ### Phase 2: Core Domain & Ports
-- [ ] Define `domain/command.go` (Command, CommandSpec types)
-- [ ] Define `domain/result.go` (ParseResult type)
-- [ ] Define `domain/schema.go` (Schema type)
-- [ ] Define `ports/runner.go` (CommandRunner interface)
-- [ ] Define `ports/parser.go` (Parser, ParserRegistry interfaces)
-- [ ] Define `ports/writer.go` (OutputWriter interface)
-- [ ] Define `ports/schema.go` (SchemaRepository interface)
+- [x] Define `domain/command.go` (Command, CommandSpec types)
+- [x] Define `domain/result.go` (ParseResult type)
+- [x] Define `domain/schema.go` (Schema type)
+- [x] Define `ports/runner.go` (CommandRunner interface)
+- [x] Define `ports/parser.go` (Parser, ParserRegistry interfaces)
+- [x] Define `ports/writer.go` (OutputWriter interface)
+- [x] Define `ports/schema.go` (SchemaRepository interface)
 
 ### Phase 3: Core Services
-- [ ] Implement `services/executor.go` (main orchestration)
-- [ ] Implement `services/matcher.go` (command → parser matching)
+- [x] Implement `services/executor.go` (main orchestration)
+- [x] Implement `services/matcher.go` (command → parser matching)
 - [ ] Implement `services/validator.go` (schema validation)
 
 ### Phase 4: Adapters - Infrastructure
-- [ ] Implement `adapters/runner/exec.go` (os/exec wrapper)
-- [ ] Implement `adapters/schema/embedded.go` (embed.FS loader)
-- [ ] Implement `adapters/writer/json.go` (JSON output)
-- [ ] Implement `adapters/writer/passthrough.go` (raw output)
+- [x] Implement `adapters/runner/exec.go` (os/exec wrapper)
+- [x] Implement `adapters/schema/embedded.go` (embed.FS loader)
+- [x] Implement `adapters/writer/json.go` (JSON output)
+- [x] Implement `adapters/writer/passthrough.go` (raw output)
 
 ### Phase 5: Adapters - CLI Handler
-- [ ] Implement `adapters/cli/handler.go` (cobra setup)
-- [ ] Implement `adapters/cli/flags.go` (--json flag, env var)
-- [ ] Wire up composition root in `main.go`
-- [ ] Test passthrough mode works
-- [ ] Test `--json` flag triggers JSON output
+- [x] Implement `adapters/cli/handler.go` (cobra setup)
+- [x] Implement `adapters/cli/flags.go` (--json flag, env var)
+- [x] Wire up composition root in `main.go`
+- [x] Test passthrough mode works
+- [x] Test `--json` flag triggers JSON output
 
 ### Phase 6: Git Parsers
 - [ ] `git status` parser + schema
@@ -96,8 +96,8 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 
 ### Phase 11: Schema Validation & Error Handling
 - [ ] Implement schema validation service
-- [ ] Implement error JSON output (`{"error": "...", "exitCode": N}`)
-- [ ] Implement unsupported command fallback (`{"raw": "...", "parsed": false}`)
+- [x] Implement error JSON output (`{"error": "...", "exitCode": N}`)
+- [x] Implement unsupported command fallback (`{"raw": "...", "parsed": false}`)
 - [ ] Implement native JSON passthrough with validation
 - [ ] Implement streaming command buffering
 
