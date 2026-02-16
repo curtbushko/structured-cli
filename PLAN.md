@@ -158,7 +158,7 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 
 ### Phase 18: Polish & Release
 - [x] Comprehensive test coverage (>80%)
-- [ ] Documentation (README, CLAUDE.md)
+- [x] Documentation (README, CLAUDE.md)
 
 ---
 
