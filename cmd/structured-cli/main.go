@@ -12,6 +12,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/makejust"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/npm"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/python"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/test"
@@ -102,6 +103,10 @@ func run() int {
 	registry.Register(cargo.NewFmtParser())
 	registry.Register(cargo.NewDocParser())
 	registry.Register(cargo.NewCheckParser())
+
+	// Register Make/Just parsers
+	registry.Register(makejust.NewMakeParser())
+	registry.Register(makejust.NewJustParser())
 
 	// Register Docker parsers
 	registry.Register(docker.NewPSParser())

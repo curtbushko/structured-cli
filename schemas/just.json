@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/just.json",
+  "title": "Just Command Runner Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the recipe succeeded"
+    },
+    "recipe": {
+      "type": "string",
+      "description": "The recipe that was executed"
+    },
+    "duration": {
+      "type": "integer",
+      "description": "Execution duration in milliseconds"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if execution failed"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code from just"
+    },
+    "recipes": {
+      "type": "array",
+      "description": "List of available recipes",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The recipe name"
+          },
+          "description": {
+            "type": "string",
+            "description": "The recipe description from comments"
+          },
+          "parameters": {
+            "type": "array",
+            "description": "The recipe's parameters",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The parameter name"
+                },
+                "default": {
+                  "type": "string",
+                  "description": "The default value if any"
+                }
+              },
+              "required": ["name"]
+            }
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "commands": {
+      "type": "array",
+      "description": "Commands to be run (dry run mode)",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["success", "exit_code"]
+}

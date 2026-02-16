@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/make.json",
+  "title": "Make Build Output",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Whether the build succeeded"
+    },
+    "target": {
+      "type": "string",
+      "description": "The target that was built"
+    },
+    "duration": {
+      "type": "integer",
+      "description": "Build duration in milliseconds"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if build failed"
+    },
+    "exit_code": {
+      "type": "integer",
+      "description": "Exit code from make"
+    },
+    "targets": {
+      "type": "array",
+      "description": "List of available targets",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The target name"
+          },
+          "description": {
+            "type": "string",
+            "description": "The target description if available"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The target's prerequisites"
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "commands": {
+      "type": "array",
+      "description": "Commands to be run (dry run mode)",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["success", "exit_code"]
+}

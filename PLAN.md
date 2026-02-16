@@ -141,8 +141,8 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 - [x] `cargo check` parser + schema
 
 ### Phase 16: Make/Just Parsers
-- [ ] `make` parser + schema
-- [ ] `just` parser + schema
+- [x] `make` parser + schema
+- [x] `just` parser + schema
 
 ### Phase 17: File Operations Parsers
 - [ ] `ls` parser + schema
