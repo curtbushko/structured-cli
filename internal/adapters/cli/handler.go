@@ -80,6 +80,49 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 	return cmd
 }
 
+// gitLogFormat is the format string for git log to produce parseable output.
+const gitLogFormat = "COMMIT_START%n%H%n%h%n%an%n%ae%n%aI%n%s%n%b%nCOMMIT_END"
+
+// gitStatusArgs are the flags needed for parseable git status output.
+var gitStatusArgs = []string{"--porcelain=v2", "--branch"}
+
+// transformArgs modifies command arguments to produce parseable output.
+// Some commands need special flags to output in a format the parser can handle.
+func transformArgs(cmdName string, subcommands []string, args []string) []string {
+	if cmdName != "git" || len(subcommands) == 0 {
+		return args
+	}
+
+	switch subcommands[0] {
+	case "log":
+		// Inject format flag for git log if not already present
+		hasFormat := false
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "--format") || strings.HasPrefix(arg, "--pretty") {
+				hasFormat = true
+				break
+			}
+		}
+		if !hasFormat {
+			args = append([]string{"--format=" + gitLogFormat, "--numstat"}, args...)
+		}
+	case "status":
+		// Inject porcelain format for git status if not already present
+		hasPorcelain := false
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "--porcelain") {
+				hasPorcelain = true
+				break
+			}
+		}
+		if !hasPorcelain {
+			args = append(gitStatusArgs, args...)
+		}
+	}
+
+	return args
+}
+
 // ExecuteWithArgs runs the handler with the given arguments.
 // This is the main entry point for command execution.
 //
@@ -105,8 +148,14 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 		return fmt.Errorf("parse command: %w", err)
 	}
 
+	// Transform args for parseable output if in JSON mode
+	transformedArgs := cmd.Args
+	if outputJSON {
+		transformedArgs = transformArgs(cmd.Name, cmd.Subcommands, cmd.Args)
+	}
+
 	// Execute the command
-	cmdArgs := append(cmd.Subcommands, cmd.Args...)
+	cmdArgs := append(cmd.Subcommands, transformedArgs...)
 	stdout, _, exitCode, err := h.runner.Run(ctx, cmd.Name, cmdArgs)
 	if err != nil {
 		return h.handleError(out, outputJSON, err, exitCode)
@@ -192,8 +241,9 @@ func (h *Handler) writeJSON(out io.Writer, result domain.ParseResult) error {
 	} else {
 		// Unparsed output - passthrough with wrapper
 		output = map[string]any{
-			"raw":    result.Raw,
-			"parsed": false,
+			"raw":      result.Raw,
+			"parsed":   false,
+			"exitCode": result.ExitCode,
 		}
 	}
 
