@@ -36,6 +36,7 @@ go.work.sum
 /temp
 .claude/settings.local.json
 .tasks
+structured-cli/
 
 # Nix-managed config files (from golang-shared-configs flake)
 .golangci.yml
