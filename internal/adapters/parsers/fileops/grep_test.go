@@ -7,6 +7,11 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/fileops"
 )
 
+const (
+	testFileMainGo      = "main.go"
+	testContentFuncMain = "func main() {"
+)
+
 func TestGrepParser_WithLineNumbers(t *testing.T) {
 	input := `main.go:10:func main() {
 main.go:25:    fmt.Println("Hello")
@@ -35,14 +40,14 @@ util.go:5:func helper() {
 	}
 
 	// Check first match
-	if output.Matches[0].File != "main.go" {
-		t.Errorf("Matches[0].File = %q, want %q", output.Matches[0].File, "main.go")
+	if output.Matches[0].File != testFileMainGo {
+		t.Errorf("Matches[0].File = %q, want %q", output.Matches[0].File, testFileMainGo)
 	}
 	if output.Matches[0].Line != 10 {
 		t.Errorf("Matches[0].Line = %d, want 10", output.Matches[0].Line)
 	}
-	if output.Matches[0].Content != "func main() {" {
-		t.Errorf("Matches[0].Content = %q, want %q", output.Matches[0].Content, "func main() {")
+	if output.Matches[0].Content != testContentFuncMain {
+		t.Errorf("Matches[0].Content = %q, want %q", output.Matches[0].Content, testContentFuncMain)
 	}
 }
 
@@ -70,8 +75,8 @@ util.go:func helper() {
 	if output.Matches[0].Line != 0 {
 		t.Errorf("Matches[0].Line = %d, want 0", output.Matches[0].Line)
 	}
-	if output.Matches[0].Content != "func main() {" {
-		t.Errorf("Matches[0].Content = %q, want %q", output.Matches[0].Content, "func main() {")
+	if output.Matches[0].Content != testContentFuncMain {
+		t.Errorf("Matches[0].Content = %q, want %q", output.Matches[0].Content, testContentFuncMain)
 	}
 }
 

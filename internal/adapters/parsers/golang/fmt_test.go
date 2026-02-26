@@ -5,6 +5,11 @@ import (
 	"testing"
 )
 
+const (
+	schemaTypeObject = "object"
+	testFileMainGo   = "main.go"
+)
+
 func TestFmtParser_AllFormatted(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -132,8 +137,8 @@ func TestFmtParser_Schema(t *testing.T) {
 		t.Error("Schema.Title should not be empty")
 	}
 
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
+	if schema.Type != schemaTypeObject {
+		t.Errorf("Schema.Type = %q, want %q", schema.Type, schemaTypeObject)
 	}
 
 	// Verify required properties exist
@@ -146,7 +151,7 @@ func TestFmtParser_Schema(t *testing.T) {
 }
 
 func TestFmtParser_SingleFile(t *testing.T) {
-	input := "main.go"
+	input := testFileMainGo
 
 	parser := NewFmtParser()
 	result, err := parser.Parse(strings.NewReader(input))
@@ -167,8 +172,8 @@ func TestFmtParser_SingleFile(t *testing.T) {
 		t.Fatalf("FmtResult.Unformatted length = %d, want 1", len(got.Unformatted))
 	}
 
-	if got.Unformatted[0] != "main.go" {
-		t.Errorf("FmtResult.Unformatted[0] = %q, want %q", got.Unformatted[0], "main.go")
+	if got.Unformatted[0] != testFileMainGo {
+		t.Errorf("FmtResult.Unformatted[0] = %q, want %q", got.Unformatted[0], testFileMainGo)
 	}
 }
 

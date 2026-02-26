@@ -25,8 +25,8 @@ func TestCheckoutParser_ExistingBranch(t *testing.T) {
 	if !checkout.Success {
 		t.Error("Success = false, want true")
 	}
-	if checkout.Branch != "main" {
-		t.Errorf("Branch = %q, want %q", checkout.Branch, "main")
+	if checkout.Branch != branchMain {
+		t.Errorf("Branch = %q, want %q", checkout.Branch, branchMain)
 	}
 	if checkout.NewBranch {
 		t.Error("NewBranch = true, want false")
@@ -107,8 +107,8 @@ Your branch is up to date with 'origin/main'.
 	if !checkout.Success {
 		t.Error("Success = false, want true")
 	}
-	if checkout.Branch != "main" {
-		t.Errorf("Branch = %q, want %q", checkout.Branch, "main")
+	if checkout.Branch != branchMain {
+		t.Errorf("Branch = %q, want %q", checkout.Branch, branchMain)
 	}
 }
 

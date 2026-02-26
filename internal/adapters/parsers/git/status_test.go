@@ -23,8 +23,8 @@ func TestStatusParser_CleanRepo(t *testing.T) {
 		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
 	}
 
-	if status.Branch != "main" {
-		t.Errorf("Branch = %q, want %q", status.Branch, "main")
+	if status.Branch != branchMain {
+		t.Errorf("Branch = %q, want %q", status.Branch, branchMain)
 	}
 	if !status.Clean {
 		t.Error("Clean = false, want true")

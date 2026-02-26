@@ -7,6 +7,11 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 )
 
+const (
+	testHash   = "abc123def456789012345678901234567890abcd"
+	testAuthor = "John Doe"
+)
+
 func TestBlameParser_SingleAuthor(t *testing.T) {
 	input := `abc123def456789012345678901234567890abcd 1 1 1
 author John Doe
@@ -41,11 +46,11 @@ filename main.go
 	if line.LineNumber != 1 {
 		t.Errorf("LineNumber = %d, want 1", line.LineNumber)
 	}
-	if line.Hash != "abc123def456789012345678901234567890abcd" {
-		t.Errorf("Hash = %q, want %q", line.Hash, "abc123def456789012345678901234567890abcd")
+	if line.Hash != testHash {
+		t.Errorf("Hash = %q, want %q", line.Hash, testHash)
 	}
-	if line.Author != "John Doe" {
-		t.Errorf("Author = %q, want %q", line.Author, "John Doe")
+	if line.Author != testAuthor {
+		t.Errorf("Author = %q, want %q", line.Author, testAuthor)
 	}
 	if line.Content != "package main" {
 		t.Errorf("Content = %q, want %q", line.Content, "package main")

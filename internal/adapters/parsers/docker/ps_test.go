@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const stateRunning = "running"
+
 func TestPSParser_Success(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -161,8 +163,8 @@ func TestPSParser_JSONFormat(t *testing.T) {
 	if container.Image != "nginx:latest" {
 		t.Errorf("Container.Image = %q, want %q", container.Image, "nginx:latest")
 	}
-	if container.State != "running" {
-		t.Errorf("Container.State = %q, want %q", container.State, "running")
+	if container.State != stateRunning {
+		t.Errorf("Container.State = %q, want %q", container.State, stateRunning)
 	}
 }
 
@@ -241,8 +243,8 @@ func TestPSParser_Schema(t *testing.T) {
 		t.Error("Schema.Title should not be empty")
 	}
 
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
+	if schema.Type != schemaTypeObject {
+		t.Errorf("Schema.Type = %q, want %q", schema.Type, schemaTypeObject)
 	}
 
 	requiredProps := []string{"success", "containers"}

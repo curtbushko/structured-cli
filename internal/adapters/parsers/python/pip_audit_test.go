@@ -217,8 +217,8 @@ func TestPipAuditParser_Schema(t *testing.T) {
 		t.Error("Schema.Title should not be empty")
 	}
 
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
+	if schema.Type != schemaTypeObject {
+		t.Errorf("Schema.Type = %q, want %q", schema.Type, schemaTypeObject)
 	}
 
 	requiredProps := []string{"success", "vulnerabilities"}

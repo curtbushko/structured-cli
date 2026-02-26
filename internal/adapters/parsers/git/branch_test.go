@@ -13,6 +13,7 @@ const (
 	upstreamFeature   = "origin/feature"
 	detachedHead      = "(HEAD detached at abc123)"
 	branchFeatureAuth = "feature/auth"
+	testCommitAbc1234 = "abc1234"
 )
 
 func TestBranchListType(t *testing.T) {
@@ -285,8 +286,8 @@ func TestBranchParser_VerboseWithHash(t *testing.T) {
 	if branches.Branches[0].Name != branchMain {
 		t.Errorf("expected first branch %q, got %q", branchMain, branches.Branches[0].Name)
 	}
-	if branches.Branches[0].LastCommit != "abc1234" {
-		t.Errorf("expected lastCommit 'abc1234', got %q", branches.Branches[0].LastCommit)
+	if branches.Branches[0].LastCommit != testCommitAbc1234 {
+		t.Errorf("expected lastCommit '%s', got %q", testCommitAbc1234, branches.Branches[0].LastCommit)
 	}
 }
 

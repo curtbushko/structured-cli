@@ -23,8 +23,8 @@ func TestCommitParser_SuccessfulCommit(t *testing.T) {
 		t.Fatalf("result.Data is not *git.CommitOutput, got %T", result.Data)
 	}
 
-	if commit.Branch != "main" {
-		t.Errorf("Branch = %q, want %q", commit.Branch, "main")
+	if commit.Branch != branchMain {
+		t.Errorf("Branch = %q, want %q", commit.Branch, branchMain)
 	}
 	if commit.Hash != "abc1234" {
 		t.Errorf("Hash = %q, want %q", commit.Hash, "abc1234")
@@ -110,8 +110,8 @@ func TestCommitParser_RootCommit(t *testing.T) {
 		t.Fatalf("result.Data is not *git.CommitOutput, got %T", result.Data)
 	}
 
-	if commit.Branch != "main" {
-		t.Errorf("Branch = %q, want %q", commit.Branch, "main")
+	if commit.Branch != branchMain {
+		t.Errorf("Branch = %q, want %q", commit.Branch, branchMain)
 	}
 	if commit.Hash != "a1b2c3d" {
 		t.Errorf("Hash = %q, want %q", commit.Hash, "a1b2c3d")

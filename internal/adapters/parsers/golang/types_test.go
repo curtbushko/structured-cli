@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const testPkgExample = "github.com/example/pkg"
+
 // Build Tests
 
 func TestBuildType(t *testing.T) {
@@ -50,8 +52,8 @@ func TestBuildType(t *testing.T) {
 		if len(build.Errors) != 1 {
 			t.Errorf("Errors length = %v, want 1", len(build.Errors))
 		}
-		if build.Errors[0].File != "main.go" {
-			t.Errorf("Error File = %v, want main.go", build.Errors[0].File)
+		if build.Errors[0].File != testFileMainGo {
+			t.Errorf("Error File = %v, want %s", build.Errors[0].File, testFileMainGo)
 		}
 		if build.Errors[0].Line != 10 {
 			t.Errorf("Error Line = %v, want 10", build.Errors[0].Line)
@@ -227,8 +229,8 @@ func TestTestPackageType(t *testing.T) {
 		},
 	}
 
-	if pkg.Package != "github.com/example/pkg" {
-		t.Errorf("Package = %v, want github.com/example/pkg", pkg.Package)
+	if pkg.Package != testPkgExample {
+		t.Errorf("Package = %v, want %s", pkg.Package, testPkgExample)
 	}
 	if !pkg.Passed {
 		t.Errorf("Passed = %v, want true", pkg.Passed)

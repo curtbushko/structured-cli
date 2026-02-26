@@ -7,6 +7,8 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/fileops"
 )
 
+const testFileFileTxt = "file.txt"
+
 func TestWCParser_SingleFile(t *testing.T) {
 	// wc output format: lines words bytes filename
 	input := `      10      50     500 file.txt
@@ -26,8 +28,8 @@ func TestWCParser_SingleFile(t *testing.T) {
 	if len(output.Files) != 1 {
 		t.Fatalf("Files len = %d, want 1", len(output.Files))
 	}
-	if output.Files[0].File != "file.txt" {
-		t.Errorf("Files[0].File = %q, want %q", output.Files[0].File, "file.txt")
+	if output.Files[0].File != testFileFileTxt {
+		t.Errorf("Files[0].File = %q, want %q", output.Files[0].File, testFileFileTxt)
 	}
 	if output.Files[0].Lines != 10 {
 		t.Errorf("Files[0].Lines = %d, want 10", output.Files[0].Lines)
@@ -180,8 +182,8 @@ func TestWCParser_LinesOnly(t *testing.T) {
 	if output.Files[0].Lines != 10 {
 		t.Errorf("Files[0].Lines = %d, want 10", output.Files[0].Lines)
 	}
-	if output.Files[0].File != "file.txt" {
-		t.Errorf("Files[0].File = %q, want %q", output.Files[0].File, "file.txt")
+	if output.Files[0].File != testFileFileTxt {
+		t.Errorf("Files[0].File = %q, want %q", output.Files[0].File, testFileFileTxt)
 	}
 }
 

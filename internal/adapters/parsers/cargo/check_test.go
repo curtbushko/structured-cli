@@ -5,6 +5,11 @@ import (
 	"testing"
 )
 
+const (
+	schemaTypeObject = "object"
+	testFileSrcLibRs = "src/lib.rs"
+)
+
 func TestCheckParser_EmptyOutput(t *testing.T) {
 	parser := NewCheckParser()
 	result, err := parser.Parse(strings.NewReader(""))
@@ -85,8 +90,8 @@ func TestCheckParser_Warning(t *testing.T) {
 		t.Errorf("Warning.Code = %q, want %q", warn.Code, "unused_variables")
 	}
 
-	if warn.File != "src/lib.rs" {
-		t.Errorf("Warning.File = %q, want %q", warn.File, "src/lib.rs")
+	if warn.File != testFileSrcLibRs {
+		t.Errorf("Warning.File = %q, want %q", warn.File, testFileSrcLibRs)
 	}
 
 	if warn.Line != 5 {
@@ -130,8 +135,8 @@ func TestCheckParser_Error(t *testing.T) {
 		t.Errorf("Error.Code = %q, want %q", compErr.Code, "E0425")
 	}
 
-	if compErr.File != "src/lib.rs" {
-		t.Errorf("Error.File = %q, want %q", compErr.File, "src/lib.rs")
+	if compErr.File != testFileSrcLibRs {
+		t.Errorf("Error.File = %q, want %q", compErr.File, testFileSrcLibRs)
 	}
 
 	if compErr.Line != 3 {
@@ -242,8 +247,8 @@ func TestCheckParser_Schema(t *testing.T) {
 		t.Error("Schema.Title should not be empty")
 	}
 
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
+	if schema.Type != schemaTypeObject {
+		t.Errorf("Schema.Type = %q, want %q", schema.Type, schemaTypeObject)
 	}
 
 	requiredProps := []string{"success", "errors", "warnings"}

@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const errorCodeE0425 = "E0425"
+
 func TestRunParser_EmptyOutput(t *testing.T) {
 	parser := NewRunParser()
 	result, err := parser.Parse(strings.NewReader(""))
@@ -86,8 +88,8 @@ func TestRunParser_BuildFailure(t *testing.T) {
 		t.Fatalf("RunResult.Errors length = %d, want 1", len(got.Errors))
 	}
 
-	if got.Errors[0].Code != "E0425" {
-		t.Errorf("Error.Code = %q, want %q", got.Errors[0].Code, "E0425")
+	if got.Errors[0].Code != errorCodeE0425 {
+		t.Errorf("Error.Code = %q, want %q", got.Errors[0].Code, errorCodeE0425)
 	}
 }
 
@@ -187,8 +189,8 @@ func TestRunParser_Schema(t *testing.T) {
 		t.Error("Schema.Title should not be empty")
 	}
 
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
+	if schema.Type != schemaTypeObject {
+		t.Errorf("Schema.Type = %q, want %q", schema.Type, schemaTypeObject)
 	}
 
 	requiredProps := []string{"success", "build_success", "errors"}
