@@ -182,49 +182,7 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	// Look up parser for this command
 	parser, found := h.registry.Find(cmd.Name, cmd.Subcommands)
 
-	var result domain.ParseResult
-	var schema domain.Schema
-
-	if found {
-		// If command failed with specific fatal errors like "not a git repository",
-		// treat as an error rather than trying to parse empty output.
-		isFatalError := exitCode != 0 && raw == "" && stderrStr != "" &&
-			(strings.Contains(stderrStr, "not a git repository") ||
-				strings.Contains(stderrStr, "command not found"))
-		if isFatalError {
-			result = domain.NewParseResultWithError(
-				errors.New(strings.TrimSpace(stderrStr)),
-				stderrStr,
-				exitCode,
-			)
-		} else {
-			// Parse the output (include stderr if stdout is empty)
-			parseInput := raw
-			if parseInput == "" && stderrStr != "" {
-				parseInput = stderrStr
-			}
-			schema = parser.Schema()
-			result, err = parser.Parse(strings.NewReader(parseInput))
-			if err != nil {
-				result = domain.NewParseResultWithError(
-					fmt.Errorf("parse error: %w", err),
-					parseInput,
-					exitCode,
-				)
-			} else {
-				result.ExitCode = exitCode
-				result.Raw = parseInput
-				// Sync exit code and success fields in the result data
-				syncExitCodeAndSuccess(result.Data, exitCode)
-			}
-		}
-	} else {
-		// No parser - passthrough mode
-		if stderrStr != "" {
-			raw = raw + stderrStr
-		}
-		result = domain.NewParseResult(nil, raw, exitCode)
-	}
+	result, schema := h.parseOutput(parser, found, raw, stderrStr, exitCode)
 
 	// Write output based on mode
 	if err := h.writeOutput(out, outputJSON, result, schema); err != nil {
@@ -237,6 +195,59 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	}
 
 	return nil
+}
+
+// parseOutput processes command output through a parser or returns passthrough result.
+func (h *Handler) parseOutput(parser ports.Parser, found bool, raw, stderrStr string, exitCode int) (domain.ParseResult, domain.Schema) {
+	var result domain.ParseResult
+	var schema domain.Schema
+
+	if !found {
+		// No parser - passthrough mode
+		if stderrStr != "" {
+			raw = raw + stderrStr
+		}
+		return domain.NewParseResult(nil, raw, exitCode), schema
+	}
+
+	// Check for fatal errors like "not a git repository"
+	if isFatalError(exitCode, raw, stderrStr) {
+		return domain.NewParseResultWithError(
+			errors.New(strings.TrimSpace(stderrStr)),
+			stderrStr,
+			exitCode,
+		), schema
+	}
+
+	// Parse the output (include stderr if stdout is empty)
+	parseInput := raw
+	if parseInput == "" && stderrStr != "" {
+		parseInput = stderrStr
+	}
+
+	schema = parser.Schema()
+	result, err := parser.Parse(strings.NewReader(parseInput))
+	if err != nil {
+		return domain.NewParseResultWithError(
+			fmt.Errorf("parse error: %w", err),
+			parseInput,
+			exitCode,
+		), schema
+	}
+
+	result.ExitCode = exitCode
+	result.Raw = parseInput
+	syncExitCodeAndSuccess(result.Data, exitCode)
+	return result, schema
+}
+
+// isFatalError checks if the command output indicates a fatal error.
+func isFatalError(exitCode int, raw, stderrStr string) bool {
+	if exitCode == 0 || raw != "" || stderrStr == "" {
+		return false
+	}
+	return strings.Contains(stderrStr, "not a git repository") ||
+		strings.Contains(stderrStr, "command not found")
 }
 
 // handleError writes an error in the appropriate format.

@@ -231,10 +231,7 @@ func (tc *testContext) iHaveADirectoryWithFiles(ctx context.Context) error {
 	if err := os.WriteFile(filepath.Join(tc.tempDir, "file2.txt"), []byte("content 2"), 0o644); err != nil {
 		return err
 	}
-	if err := os.Mkdir(filepath.Join(tc.tempDir, "subdir"), 0o755); err != nil {
-		return err
-	}
-	return nil
+	return os.Mkdir(filepath.Join(tc.tempDir, "subdir"), 0o755)
 }
 
 func (tc *testContext) iHaveAFileWithContent(_ context.Context, filename, content string) error {
@@ -358,7 +355,7 @@ func (tc *testContext) iHaveAJustfileWithFailingRecipe(_ context.Context, recipe
 	}
 	tc.repoDir = tc.tempDir
 
-	justfileContent := fmt.Sprintf("%s:\n    @exit 1\n", recipe)
+	justfileContent := recipe + ":\n    @exit 1\n"
 	return os.WriteFile(filepath.Join(tc.tempDir, "justfile"), []byte(justfileContent), 0o644)
 }
 

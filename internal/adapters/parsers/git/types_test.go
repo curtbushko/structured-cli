@@ -606,8 +606,8 @@ func TestDiffFileWithRename(t *testing.T) {
 	if file.OldPath != "old/path.go" {
 		t.Errorf("OldPath = %v, want old/path.go", file.OldPath)
 	}
-	if file.Status != "renamed" {
-		t.Errorf("Status = %v, want renamed", file.Status)
+	if file.Status != statusRenamed {
+		t.Errorf("Status = %v, want %s", file.Status, statusRenamed)
 	}
 	if file.Binary {
 		t.Errorf("Binary = %v, want false", file.Binary)
