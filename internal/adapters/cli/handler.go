@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -67,9 +68,15 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 		SilenceErrors:      true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Handle --help and -h specially since we disable flag parsing
+			// Only check if -h or --help appears BEFORE the command name
+			// to avoid triggering help when -h is meant for the wrapped command
 			for _, arg := range args {
 				if arg == "--help" || arg == "-h" {
 					return cmd.Help()
+				}
+				// Stop checking once we hit a non-flag argument (the command)
+				if !strings.HasPrefix(arg, "-") {
+					break
 				}
 			}
 			envJSON := os.Getenv(EnvJSONKey)
@@ -156,7 +163,7 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 
 	// Execute the command
 	cmdArgs := append(cmd.Subcommands, transformedArgs...)
-	stdout, _, exitCode, err := h.runner.Run(ctx, cmd.Name, cmdArgs)
+	stdout, stderr, exitCode, err := h.runner.Run(ctx, cmd.Name, cmdArgs)
 	if err != nil {
 		return h.handleError(out, outputJSON, err, exitCode)
 	}
@@ -168,6 +175,10 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	}
 	raw := string(rawBytes)
 
+	// Read stderr for error information
+	stderrBytes, _ := io.ReadAll(stderr)
+	stderrStr := string(stderrBytes)
+
 	// Look up parser for this command
 	parser, found := h.registry.Find(cmd.Name, cmd.Subcommands)
 
@@ -175,21 +186,43 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	var schema domain.Schema
 
 	if found {
-		// Parse the output
-		schema = parser.Schema()
-		result, err = parser.Parse(strings.NewReader(raw))
-		if err != nil {
+		// If command failed with specific fatal errors like "not a git repository",
+		// treat as an error rather than trying to parse empty output.
+		isFatalError := exitCode != 0 && raw == "" && stderrStr != "" &&
+			(strings.Contains(stderrStr, "not a git repository") ||
+				strings.Contains(stderrStr, "command not found"))
+		if isFatalError {
 			result = domain.NewParseResultWithError(
-				fmt.Errorf("parse error: %w", err),
-				raw,
+				errors.New(strings.TrimSpace(stderrStr)),
+				stderrStr,
 				exitCode,
 			)
 		} else {
-			result.ExitCode = exitCode
-			result.Raw = raw
+			// Parse the output (include stderr if stdout is empty)
+			parseInput := raw
+			if parseInput == "" && stderrStr != "" {
+				parseInput = stderrStr
+			}
+			schema = parser.Schema()
+			result, err = parser.Parse(strings.NewReader(parseInput))
+			if err != nil {
+				result = domain.NewParseResultWithError(
+					fmt.Errorf("parse error: %w", err),
+					parseInput,
+					exitCode,
+				)
+			} else {
+				result.ExitCode = exitCode
+				result.Raw = parseInput
+				// Sync exit code and success fields in the result data
+				syncExitCodeAndSuccess(result.Data, exitCode)
+			}
 		}
 	} else {
 		// No parser - passthrough mode
+		if stderrStr != "" {
+			raw = raw + stderrStr
+		}
 		result = domain.NewParseResult(nil, raw, exitCode)
 	}
 
@@ -261,4 +294,37 @@ func (h *Handler) writePassthrough(out io.Writer, result domain.ParseResult) err
 // This is typically called from main().
 func (h *Handler) Run() error {
 	return h.rootCmd.Execute()
+}
+
+// syncExitCodeAndSuccess updates the ExitCode and Success fields in the result data
+// based on the actual exit code from command execution. This handles cases where
+// the parser couldn't detect failure from the output (e.g., silent exit with @exit 1).
+func syncExitCodeAndSuccess(data any, exitCode int) {
+	if data == nil {
+		return
+	}
+
+	v := reflect.ValueOf(data)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return
+	}
+
+	// Update ExitCode field if it exists
+	exitCodeField := v.FieldByName("ExitCode")
+	if exitCodeField.IsValid() && exitCodeField.CanSet() && exitCodeField.Kind() == reflect.Int {
+		exitCodeField.SetInt(int64(exitCode))
+	}
+
+	// Update Success field based on exit code if it exists
+	successField := v.FieldByName("Success")
+	if successField.IsValid() && successField.CanSet() && successField.Kind() == reflect.Bool {
+		// Only mark as failure if exit code is non-zero
+		// Don't override an already-false Success (parser may have detected error)
+		if exitCode != 0 {
+			successField.SetBool(false)
+		}
+	}
 }

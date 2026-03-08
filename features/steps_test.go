@@ -57,6 +57,8 @@ type testContext struct {
 	envVars      map[string]string
 	binaryPath   string
 	emptyRepoDir string
+	testFile     string
+	nonGitDir    string
 }
 
 func newTestContext() *testContext {
@@ -189,6 +191,175 @@ func (tc *testContext) iHaveAnEmptyGitRepository(ctx context.Context) error {
 
 	tc.repoDir = tc.emptyRepoDir
 	return nil
+}
+
+func (tc *testContext) iAmNotInAGitRepository(_ context.Context) error {
+	var err error
+	tc.nonGitDir, err = os.MkdirTemp("", "structured-cli-nongit-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.nonGitDir
+
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+	return nil
+}
+
+func (tc *testContext) iHaveADirectoryWithFiles(ctx context.Context) error {
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-files-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	// Create some test files
+	if err := os.WriteFile(filepath.Join(tc.tempDir, "file1.txt"), []byte("content 1"), 0o644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(tc.tempDir, "file2.txt"), []byte("content 2"), 0o644); err != nil {
+		return err
+	}
+	if err := os.Mkdir(filepath.Join(tc.tempDir, "subdir"), 0o755); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (tc *testContext) iHaveAFileWithContent(_ context.Context, filename, content string) error {
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	if tc.tempDir == "" {
+		tc.tempDir, err = os.MkdirTemp("", "structured-cli-file-*")
+		if err != nil {
+			return err
+		}
+		tc.repoDir = tc.tempDir
+	}
+
+	tc.testFile = filepath.Join(tc.repoDir, filename)
+	return os.WriteFile(tc.testFile, []byte(content), 0o644)
+}
+
+func (tc *testContext) iHaveAFileWithMultipleLines(_ context.Context, filename string) error {
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	if tc.tempDir == "" {
+		tc.tempDir, err = os.MkdirTemp("", "structured-cli-multiline-*")
+		if err != nil {
+			return err
+		}
+		tc.repoDir = tc.tempDir
+	}
+
+	// Create file with 20 lines
+	var content strings.Builder
+	for i := 1; i <= 20; i++ {
+		content.WriteString(fmt.Sprintf("Line %d of the test file\n", i))
+	}
+
+	tc.testFile = filepath.Join(tc.repoDir, filename)
+	return os.WriteFile(tc.testFile, []byte(content.String()), 0o644)
+}
+
+func (tc *testContext) iStageTheModifiedFile(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "git", "add", "-A")
+	cmd.Dir = tc.repoDir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git add failed: %w\n%s", err, out)
+	}
+	return nil
+}
+
+func (tc *testContext) iHaveAMakefileWithTarget(_ context.Context, target string) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-make-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	makefileContent := fmt.Sprintf(".PHONY: %s\n%s:\n\t@echo \"Running %s\"\n", target, target, target)
+	return os.WriteFile(filepath.Join(tc.tempDir, "Makefile"), []byte(makefileContent), 0o644)
+}
+
+func (tc *testContext) iHaveAMakefileWithFailingTarget(_ context.Context, target string) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	var err2 error
+	tc.tempDir, err2 = os.MkdirTemp("", "structured-cli-make-fail-*")
+	if err2 != nil {
+		return err2
+	}
+	tc.repoDir = tc.tempDir
+
+	makefileContent := fmt.Sprintf(".PHONY: %s\n%s:\n\t@exit 1\n", target, target)
+	return os.WriteFile(filepath.Join(tc.tempDir, "Makefile"), []byte(makefileContent), 0o644)
+}
+
+func (tc *testContext) iHaveAJustfileWithRecipe(_ context.Context, recipe string) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-just-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	justfileContent := fmt.Sprintf("%s:\n    @echo \"Running %s\"\n", recipe, recipe)
+	return os.WriteFile(filepath.Join(tc.tempDir, "justfile"), []byte(justfileContent), 0o644)
+}
+
+func (tc *testContext) iHaveAJustfileWithFailingRecipe(_ context.Context, recipe string) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	var err2 error
+	tc.tempDir, err2 = os.MkdirTemp("", "structured-cli-just-fail-*")
+	if err2 != nil {
+		return err2
+	}
+	tc.repoDir = tc.tempDir
+
+	justfileContent := fmt.Sprintf("%s:\n    @exit 1\n", recipe)
+	return os.WriteFile(filepath.Join(tc.tempDir, "justfile"), []byte(justfileContent), 0o644)
 }
 
 func (tc *testContext) theEnvironmentVariableIsSetTo(_ context.Context, name, value string) error {
@@ -441,6 +612,76 @@ func (tc *testContext) theFirstCommitShouldHaveAsAString(_ context.Context, fiel
 	return nil
 }
 
+func (tc *testContext) theFirstFileShouldHaveAsAString(_ context.Context, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	files, ok := data["files"].([]interface{})
+	if !ok || len(files) == 0 {
+		return errors.New("no files found in JSON")
+	}
+
+	firstFile, ok := files[0].(map[string]interface{})
+	if !ok {
+		return errors.New("first file is not an object")
+	}
+
+	val, ok := firstFile[field]
+	if !ok {
+		return fmt.Errorf("first file does not have field %q", field)
+	}
+
+	if _, ok := val.(string); !ok {
+		return fmt.Errorf("field %q is not a string, got %T", field, val)
+	}
+
+	return nil
+}
+
+func (tc *testContext) oneBranchShouldHaveCurrentEqualToTrue(_ context.Context) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	branches, ok := data["branches"].([]interface{})
+	if !ok {
+		return errors.New("branches is not an array")
+	}
+
+	for _, branch := range branches {
+		branchMap, ok := branch.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if current, ok := branchMap["current"].(bool); ok && current {
+			return nil
+		}
+	}
+
+	return errors.New("no branch has current=true")
+}
+
+func (tc *testContext) theJSONArrayShouldHaveAtLeastNItems(_ context.Context, key string, minItems int) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	arr, ok := data[key].([]interface{})
+	if !ok {
+		return fmt.Errorf("key %q is not an array", key)
+	}
+
+	if len(arr) < minItems {
+		return fmt.Errorf("array %q has %d items, expected at least %d", key, len(arr), minItems)
+	}
+
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	tc := newTestContext()
 
@@ -448,12 +689,25 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I have a git repository$`, tc.iHaveAGitRepository)
 	ctx.Step(`^I have a git repository with commits$`, tc.iHaveAGitRepositoryWithCommits)
 
-	// Given steps
+	// Given steps - Git
 	ctx.Step(`^the repository has no changes$`, tc.theRepositoryHasNoChanges)
 	ctx.Step(`^I create an untracked file "([^"]*)"$`, tc.iCreateAnUntrackedFile)
 	ctx.Step(`^I modify a tracked file$`, tc.iModifyATrackedFile)
 	ctx.Step(`^I have an empty git repository$`, tc.iHaveAnEmptyGitRepository)
+	ctx.Step(`^I am not in a git repository$`, tc.iAmNotInAGitRepository)
+	ctx.Step(`^I stage the modified file$`, tc.iStageTheModifiedFile)
 	ctx.Step(`^the environment variable "([^"]*)" is set to "([^"]*)"$`, tc.theEnvironmentVariableIsSetTo)
+
+	// Given steps - File operations
+	ctx.Step(`^I have a directory with files$`, tc.iHaveADirectoryWithFiles)
+	ctx.Step(`^I have a file "([^"]*)" with content "([^"]*)"$`, tc.iHaveAFileWithContent)
+	ctx.Step(`^I have a file "([^"]*)" with multiple lines$`, tc.iHaveAFileWithMultipleLines)
+
+	// Given steps - Make/Just
+	ctx.Step(`^I have a Makefile with target "([^"]*)"$`, tc.iHaveAMakefileWithTarget)
+	ctx.Step(`^I have a Makefile with failing target "([^"]*)"$`, tc.iHaveAMakefileWithFailingTarget)
+	ctx.Step(`^I have a justfile with recipe "([^"]*)"$`, tc.iHaveAJustfileWithRecipe)
+	ctx.Step(`^I have a justfile with failing recipe "([^"]*)"$`, tc.iHaveAJustfileWithFailingRecipe)
 
 	// When steps
 	ctx.Step(`^I run "([^"]*)"$`, tc.iRun)
@@ -471,7 +725,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the JSON "([^"]*)" array should not be empty$`, tc.theJSONArrayShouldNotBeEmpty)
 	ctx.Step(`^the JSON "([^"]*)" array should be empty$`, tc.theJSONArrayShouldBeEmpty)
 	ctx.Step(`^the JSON "([^"]*)" array should have at most (\d+) items$`, tc.theJSONArrayShouldHaveAtMostNItems)
+	ctx.Step(`^the JSON "([^"]*)" array should have at least (\d+) items$`, tc.theJSONArrayShouldHaveAtLeastNItems)
 	ctx.Step(`^the first commit should have "([^"]*)" as a string$`, tc.theFirstCommitShouldHaveAsAString)
+	ctx.Step(`^the first file should have "([^"]*)" as a string$`, tc.theFirstFileShouldHaveAsAString)
+	ctx.Step(`^one branch should have "current" equal to true$`, tc.oneBranchShouldHaveCurrentEqualToTrue)
 
 	// Cleanup after each scenario
 	ctx.After(func(ctx context.Context, _ *godog.Scenario, _ error) (context.Context, error) {
@@ -485,6 +742,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		}
 		if tc.emptyRepoDir != "" {
 			os.RemoveAll(tc.emptyRepoDir)
+		}
+		if tc.nonGitDir != "" {
+			os.RemoveAll(tc.nonGitDir)
+		}
+		if tc.testFile != "" {
+			os.Remove(tc.testFile)
 		}
 		return ctx, nil
 	})

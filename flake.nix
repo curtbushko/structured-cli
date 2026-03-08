@@ -31,6 +31,20 @@
         subPackages = [ "cmd/go-ai-lint" ];
         vendorHash = "sha256-zkXyXTEnMmBZnvzoq0UWKgzWZlyNRyQZCYAv+huZo0I=";
       };
+
+      # Build godog BDD testing tool from source
+      godog = { pkgs }: pkgs.buildGoModule {
+        pname = "godog";
+        version = "0.15.0";
+        src = pkgs.fetchFromGitHub {
+          owner = "cucumber";
+          repo = "godog";
+          rev = "v0.15.0";
+          sha256 = "sha256-iwWMhXMqjRRxC2hvuKwtfm9Y+ROzNJjqMoI7P27xSfY=";
+        };
+        subPackages = [ "cmd/godog" ];
+        vendorHash = "sha256-lPnXxbc4A9yNwpzWkuXJ6hd2adOeOF1+LlEIrLAlyEI=";
+      };
     in
     {
       overlays.default = final: prev: {
@@ -43,14 +57,43 @@
         in {
         default = pkgs.mkShell {
           packages = with pkgs; [
-            docker
-            # go (version is specified by overlay)
+            # Go development
             go
             go-task
             gotools
             golangci-lint
             (go-ai-lint { inherit pkgs; })
+            (godog { inherit pkgs; })
             sharedConfigs
+
+            # E2E testing dependencies
+            # Core tools for file operations tests
+            coreutils
+            findutils
+            gnugrep
+            ripgrep
+            fd
+
+            # Git for git command tests
+            git
+
+            # Build tools for make/just tests
+            gnumake
+            just
+
+            # Docker for container tests
+            docker
+
+            # Node.js for npm tests (optional)
+            nodejs
+
+            # Python for python tool tests (optional)
+            python3
+            python3Packages.pip
+
+            # Rust for cargo tests (optional)
+            rustc
+            cargo
           ];
 
           shellHook = ''

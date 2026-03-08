@@ -412,3 +412,75 @@ func TestDiffParser_Schema(t *testing.T) {
 		t.Errorf("expected schema Required to contain 'files', got %v", schema.Required)
 	}
 }
+
+func TestDiffParser_FilePathWithSpaces(t *testing.T) {
+	input := `diff --git a/path with spaces.go b/path with spaces.go
+index abc123..def456 100644
+--- a/path with spaces.go
++++ b/path with spaces.go
+@@ -1,3 +1,4 @@
+ # Title
++New line
+ Content
+`
+	parser := NewDiffParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	diff, ok := result.Data.(*Diff)
+	if !ok {
+		t.Fatalf("expected *Diff, got %T", result.Data)
+	}
+
+	if len(diff.Files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(diff.Files))
+	}
+
+	if diff.Files[0].Path != "path with spaces.go" {
+		t.Errorf("expected path 'path with spaces.go', got %s", diff.Files[0].Path)
+	}
+}
+
+func TestDiffParser_RenamedFileWithSpaces(t *testing.T) {
+	input := `diff --git a/old path name.go b/new path name.go
+similarity index 95%
+rename from old path name.go
+rename to new path name.go
+index abc123..def456 100644
+--- a/old path name.go
++++ b/new path name.go
+@@ -1 +1 @@
+-old content
++new content
+`
+	parser := NewDiffParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	diff, ok := result.Data.(*Diff)
+	if !ok {
+		t.Fatalf("expected *Diff, got %T", result.Data)
+	}
+
+	if len(diff.Files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(diff.Files))
+	}
+
+	if diff.Files[0].Status != "renamed" {
+		t.Errorf("expected status renamed, got %s", diff.Files[0].Status)
+	}
+
+	if diff.Files[0].Path != "new path name.go" {
+		t.Errorf("expected path 'new path name.go', got %s", diff.Files[0].Path)
+	}
+
+	if diff.Files[0].OldPath != "old path name.go" {
+		t.Errorf("expected oldPath 'old path name.go', got %s", diff.Files[0].OldPath)
+	}
+}

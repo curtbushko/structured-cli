@@ -359,3 +359,106 @@ func TestExecutor_UnsupportedCommand_NonZeroExit(t *testing.T) {
 		t.Errorf("FallbackResult.ExitCode = %d, want %d", fallbackResult.ExitCode, exitCode)
 	}
 }
+
+// testResultWithSuccess is a test struct with Success and ExitCode fields.
+type testResultWithSuccess struct {
+	Success  bool `json:"success"`
+	ExitCode int  `json:"exit_code"`
+	Data     string
+}
+
+func TestSyncExitCodeAndSuccess_PointerToStruct(t *testing.T) {
+	result := &testResultWithSuccess{Success: true, ExitCode: 0, Data: "test"}
+
+	syncExitCodeAndSuccess(result, 1)
+
+	if result.Success != false {
+		t.Errorf("Success = %v, want false", result.Success)
+	}
+	if result.ExitCode != 1 {
+		t.Errorf("ExitCode = %d, want 1", result.ExitCode)
+	}
+}
+
+func TestSyncExitCodeAndSuccess_ZeroExitCode(t *testing.T) {
+	result := &testResultWithSuccess{Success: true, ExitCode: 0, Data: "test"}
+
+	syncExitCodeAndSuccess(result, 0)
+
+	if result.Success != true {
+		t.Errorf("Success = %v, want true", result.Success)
+	}
+	if result.ExitCode != 0 {
+		t.Errorf("ExitCode = %d, want 0", result.ExitCode)
+	}
+}
+
+func TestSyncExitCodeAndSuccess_NilData(t *testing.T) {
+	// Should not panic
+	syncExitCodeAndSuccess(nil, 1)
+}
+
+func TestSyncExitCodeAndSuccess_NonStruct(t *testing.T) {
+	// Should not panic or modify
+	s := "not a struct"
+	syncExitCodeAndSuccess(s, 1)
+}
+
+func TestExecutor_Execute_NonZeroExitCode_SyncsSuccessField(t *testing.T) {
+	// This test verifies that when a command returns a non-zero exit code,
+	// the Success field in the parsed result is updated to false.
+	ctx := context.Background()
+	cmd := domain.NewCommand("just", []string{"broken"}, nil)
+
+	// Parser returns Success: true, ExitCode: 0 (default)
+	// But runner returns exitCode: 1
+	parserResult := &testResultWithSuccess{Success: true, ExitCode: 0}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(parserResult, "", 0),
+		schema:  domain.NewSchema("just", "Just Output", "object", nil, nil),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   "",
+		exitCode: 1, // Non-zero exit code
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+
+	executor := NewExecutor(runner, registry, writer)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Execute() error = %v, want nil", err)
+	}
+
+	// Check that the exit code was synced
+	if writer.result.ExitCode != 1 {
+		t.Errorf("writer.result.ExitCode = %d, want 1", writer.result.ExitCode)
+	}
+
+	// Check that the Success field was synced to false
+	resultData, ok := writer.result.Data.(*testResultWithSuccess)
+	if !ok {
+		t.Fatalf("writer.result.Data is %T, want *testResultWithSuccess", writer.result.Data)
+	}
+
+	if resultData.Success != false {
+		t.Errorf("resultData.Success = %v, want false", resultData.Success)
+	}
+
+	if resultData.ExitCode != 1 {
+		t.Errorf("resultData.ExitCode = %d, want 1", resultData.ExitCode)
+	}
+}

@@ -258,6 +258,142 @@ func TestStatusParser_Matches(t *testing.T) {
 	}
 }
 
+func TestStatusParser_FilePathsWithSpaces(t *testing.T) {
+	// Test ordinary entry with spaces in path
+	input := `# branch.oid abc123
+# branch.head main
+1 M. N... 100644 100644 100644 abc1234 def5678 path with spaces.go
+`
+	parser := git.NewStatusParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	status, ok := result.Data.(*git.Status)
+	if !ok {
+		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
+	}
+
+	if len(status.Staged) != 1 {
+		t.Fatalf("Staged len = %d, want 1", len(status.Staged))
+	}
+	if status.Staged[0].File != "path with spaces.go" {
+		t.Errorf("Staged[0].File = %q, want %q", status.Staged[0].File, "path with spaces.go")
+	}
+	if status.Clean {
+		t.Error("Clean = true, want false")
+	}
+}
+
+func TestStatusParser_WorktreeChangesWithSpaces(t *testing.T) {
+	input := `# branch.oid abc123
+# branch.head main
+1 .M N... 100644 100644 100644 abc1234 abc1234 my file with spaces.txt
+? untracked file.log
+`
+	parser := git.NewStatusParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	status, ok := result.Data.(*git.Status)
+	if !ok {
+		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
+	}
+
+	if !contains(status.Modified, "my file with spaces.txt") {
+		t.Errorf("Modified = %v, want to contain %q", status.Modified, "my file with spaces.txt")
+	}
+	if !contains(status.Untracked, "untracked file.log") {
+		t.Errorf("Untracked = %v, want to contain %q", status.Untracked, "untracked file.log")
+	}
+	if status.Clean {
+		t.Error("Clean = true, want false")
+	}
+}
+
+func TestStatusParser_RenamedFileWithSpaces(t *testing.T) {
+	input := `# branch.oid abc123
+# branch.head main
+2 R. N... 100644 100644 100644 abc1234 abc1234 R100 new file name.txt	old file name.txt
+`
+	parser := git.NewStatusParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	status, ok := result.Data.(*git.Status)
+	if !ok {
+		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
+	}
+
+	if len(status.Staged) != 1 {
+		t.Fatalf("Staged len = %d, want 1", len(status.Staged))
+	}
+	if status.Staged[0].File != "new file name.txt" {
+		t.Errorf("Staged[0].File = %q, want %q", status.Staged[0].File, "new file name.txt")
+	}
+	if status.Staged[0].Status != "renamed" {
+		t.Errorf("Staged[0].Status = %q, want %q", status.Staged[0].Status, "renamed")
+	}
+}
+
+func TestStatusParser_MergeConflictWithSpaces(t *testing.T) {
+	input := `# branch.oid abc123
+# branch.head main
+u UU N... 100644 100644 100644 100644 abc1234 def5678 ghi9012 conflict file.txt
+`
+	parser := git.NewStatusParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	status, ok := result.Data.(*git.Status)
+	if !ok {
+		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
+	}
+
+	if !contains(status.Conflicts, "conflict file.txt") {
+		t.Errorf("Conflicts = %v, want to contain %q", status.Conflicts, "conflict file.txt")
+	}
+	if status.Clean {
+		t.Error("Clean = true, want false")
+	}
+}
+
+func TestStatusParser_DeletedFileWithSpaces(t *testing.T) {
+	input := `# branch.oid abc123
+# branch.head main
+1 .D N... 100644 100644 000000 abc1234 abc1234 deleted file with spaces.txt
+`
+	parser := git.NewStatusParser()
+	result, err := parser.Parse(strings.NewReader(input))
+
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	status, ok := result.Data.(*git.Status)
+	if !ok {
+		t.Fatalf("result.Data is not *git.Status, got %T", result.Data)
+	}
+
+	if !contains(status.Deleted, "deleted file with spaces.txt") {
+		t.Errorf("Deleted = %v, want to contain %q", status.Deleted, "deleted file with spaces.txt")
+	}
+	if status.Clean {
+		t.Error("Clean = true, want false")
+	}
+}
+
 func contains(slice []string, s string) bool {
 	for _, v := range slice {
 		if v == s {

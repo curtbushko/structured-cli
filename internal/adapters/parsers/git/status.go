@@ -181,7 +181,8 @@ func (p *StatusParser) parseOrdinaryEntry(line string, status *Status) error {
 	}
 
 	xy := parts[1]
-	path := parts[8]
+	// Path may contain spaces, so join all parts from index 8 onward
+	path := strings.Join(parts[8:], " ")
 
 	// X = staged status, Y = worktree status
 	x := xy[0]
@@ -207,19 +208,37 @@ func (p *StatusParser) parseOrdinaryEntry(line string, status *Status) error {
 // parseRenamedEntry parses a "2 XY ..." line (renamed/copied entry).
 // Format: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path><TAB><origPath>
 func (p *StatusParser) parseRenamedEntry(line string, status *Status) error {
+	// We need to carefully parse this line because:
+	// 1. The path portion contains a TAB between new and original paths
+	// 2. Paths may contain spaces
+	// We split first 9 fields by spaces, then the rest is the path portion with TAB
+
+	// Find the start of the path portion by skipping 9 space-separated fields
+	remaining := line
+	for i := 0; i < 9; i++ {
+		remaining = strings.TrimLeft(remaining, " ")
+		idx := strings.Index(remaining, " ")
+		if idx == -1 {
+			return fmt.Errorf("invalid renamed entry: %s", line)
+		}
+		remaining = remaining[idx:]
+	}
+	remaining = strings.TrimLeft(remaining, " ")
+
+	// Extract XY from original line (field index 1)
 	parts := strings.Fields(line)
-	if len(parts) < 10 {
+	if len(parts) < 2 {
 		return fmt.Errorf("invalid renamed entry: %s", line)
 	}
-
 	xy := parts[1]
 	x := xy[0]
 
-	// The path is in the last field, which may contain a tab separator
-	// Find the path portion after the score (R100, C100, etc.)
-	pathParts := parts[9]
+	// remaining now contains <newPath><TAB><origPath>
 	// Split by tab to get new path and original path
-	paths := strings.Split(pathParts, "\t")
+	paths := strings.Split(remaining, "\t")
+	if len(paths) < 1 {
+		return fmt.Errorf("invalid renamed entry path: %s", line)
+	}
 	newPath := paths[0]
 
 	// Handle staged renames/copies (X column)
@@ -243,7 +262,8 @@ func (p *StatusParser) parseUnmergedEntry(line string, status *Status) error {
 		return fmt.Errorf("invalid unmerged entry: %s", line)
 	}
 
-	path := parts[10]
+	// Path may contain spaces, so join all parts from index 10 onward
+	path := strings.Join(parts[10:], " ")
 	status.Conflicts = append(status.Conflicts, path)
 
 	return nil

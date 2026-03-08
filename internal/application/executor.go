@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
 	"github.com/curtbushko/structured-cli/internal/domain"
@@ -78,6 +79,8 @@ func (e *Executor) Execute(ctx context.Context, cmd domain.Command, out io.Write
 			// Update the exit code in the result
 			result.ExitCode = exitCode
 			result.Raw = raw
+			// Sync exit code and success fields in the result data
+			syncExitCodeAndSuccess(result.Data, exitCode)
 		}
 	} else {
 		// No parser - create fallback result with raw output
@@ -93,4 +96,37 @@ func (e *Executor) Execute(ctx context.Context, cmd domain.Command, out io.Write
 	}
 
 	return nil
+}
+
+// syncExitCodeAndSuccess updates the ExitCode and Success fields in the result data
+// based on the actual exit code from command execution. This handles cases where
+// the parser couldn't detect failure from the output (e.g., silent exit with @exit 1).
+func syncExitCodeAndSuccess(data any, exitCode int) {
+	if data == nil {
+		return
+	}
+
+	v := reflect.ValueOf(data)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return
+	}
+
+	// Update ExitCode field if it exists
+	exitCodeField := v.FieldByName("ExitCode")
+	if exitCodeField.IsValid() && exitCodeField.CanSet() && exitCodeField.Kind() == reflect.Int {
+		exitCodeField.SetInt(int64(exitCode))
+	}
+
+	// Update Success field based on exit code if it exists
+	successField := v.FieldByName("Success")
+	if successField.IsValid() && successField.CanSet() && successField.Kind() == reflect.Bool {
+		// Only mark as failure if exit code is non-zero
+		// Don't override an already-false Success (parser may have detected error)
+		if exitCode != 0 {
+			successField.SetBool(false)
+		}
+	}
 }

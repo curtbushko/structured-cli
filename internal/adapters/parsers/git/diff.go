@@ -230,13 +230,35 @@ func (p *DiffParser) finalizeCurrentFile(diff *Diff, state *diffParseState) {
 // parseFileDiffHeader parses "diff --git a/X b/Y" line.
 func (p *DiffParser) parseFileDiffHeader(line string) *DiffFile {
 	// Format: diff --git a/path b/path
-	parts := strings.SplitN(line, " ", 4)
-	if len(parts) < 4 {
+	// For paths with spaces, we need to find the "b/" prefix that starts the second path
+	// The line looks like: "diff --git a/path with spaces b/path with spaces"
+
+	// Remove "diff --git " prefix
+	const prefix = "diff --git "
+	if !strings.HasPrefix(line, prefix) {
 		return nil
 	}
+	remainder := strings.TrimPrefix(line, prefix)
 
-	// Extract path from b/path
-	bPath := parts[3]
+	// The remainder is "a/path b/path" - we need to find where "b/" starts
+	// Since paths can contain spaces, we look for " b/" pattern
+	bIndex := strings.Index(remainder, " b/")
+	if bIndex == -1 {
+		// Fallback for simple paths without spaces
+		parts := strings.SplitN(remainder, " ", 2)
+		if len(parts) < 2 {
+			return nil
+		}
+		path := strings.TrimPrefix(parts[1], "b/")
+		return &DiffFile{
+			Path:   path,
+			Status: statusModified,
+			Hunks:  []DiffHunk{},
+		}
+	}
+
+	// Extract path from b/path (after the " b/" we found)
+	bPath := remainder[bIndex+1:] // Skip the space before "b/"
 	path := strings.TrimPrefix(bPath, "b/")
 
 	return &DiffFile{
