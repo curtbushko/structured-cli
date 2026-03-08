@@ -40,10 +40,10 @@
           owner = "cucumber";
           repo = "godog";
           rev = "v0.15.0";
-          sha256 = "sha256-iwWMhXMqjRRxC2hvuKwtfm9Y+ROzNJjqMoI7P27xSfY=";
+          sha256 = "sha256-CIG0G1tvfIvjKYT4dE0Zsqvn+HIEvL+71Uz57HldZtw=";
         };
         subPackages = [ "cmd/godog" ];
-        vendorHash = "sha256-lPnXxbc4A9yNwpzWkuXJ6hd2adOeOF1+LlEIrLAlyEI=";
+        vendorHash = "sha256-5Qp7IJrfJ1YDKfZ+VO3e9BXBs19I4vCMiMzxEnRQP0M=";
       };
     in
     {
