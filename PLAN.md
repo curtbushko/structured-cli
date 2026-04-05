@@ -369,42 +369,42 @@ Filter out success/passing results from test runners and linters to focus on act
 - Preserves all failure details
 
 #### Domain Layer
-- [ ] Define `domain/filter.go` (FilterConfig, FilterResult types)
-- [ ] Define success/failure detection rules per output type
+- [x] Define `domain/filter.go` (FilterConfig, FilterResult types)
+- [x] Define success/failure detection rules per output type
 
 #### Ports Layer
-- [ ] Define `ports/filter.go` (OutputFilter interface)
+- [x] Define `ports/filter.go` (OutputFilter interface)
 
 #### Application Layer
-- [ ] Implement `application/success_filter.go`
-- [ ] Detect test results by status field (passed/failed/skipped/error)
-- [ ] Detect lint results by severity field (error/warning/info)
-- [ ] Remove passing items, preserve failures
-- [ ] Add summary stats to output
-- [ ] Integrate into executor pipeline (after parse, can chain with dedup)
+- [x] Implement `application/success_filter.go`
+- [x] Detect test results by status field (passed/failed/skipped/error)
+- [x] Detect lint results by severity field (error/warning/info)
+- [x] Remove passing items, preserve failures
+- [x] Add summary stats to output
+- [x] Integrate into executor pipeline (after parse, can chain with dedup)
 
 #### CLI Integration
-- [ ] Success filter enabled by default for test/lint commands
-- [ ] Add `--disable-filter=success` flag to show all results
-- [ ] Add `STRUCTURED_CLI_DISABLE_FILTER=success` environment variable
-- [ ] Combine with dedupe: `--disable-filter=success,dedupe`
+- [x] Success filter enabled by default for test/lint commands
+- [x] Add `--disable-filter=success` flag to show all results
+- [x] Add `STRUCTURED_CLI_DISABLE_FILTER=success` environment variable
+- [x] Combine with dedupe: `--disable-filter=success,dedupe`
 
 #### Parser Detection Rules
 Define which parsers use success filtering and how to detect success:
 
 **Test Runners:**
-- [ ] `jest` - filter where `status === "passed"`
-- [ ] `pytest` - filter where `outcome === "passed"`
-- [ ] `vitest` - filter where `state === "pass"`
-- [ ] `go test` - filter where `action === "pass"`
-- [ ] `cargo test` - filter where `status === "ok"`
-- [ ] `mocha` - filter where `state === "passed"`
+- [x] `jest` - filter where `status === "passed"`
+- [x] `pytest` - filter where `outcome === "passed"`
+- [x] `vitest` - filter where `state === "pass"`
+- [x] `go test` - filter where `action === "pass"`
+- [x] `cargo test` - filter where `status === "ok"`
+- [x] `mocha` - filter where `state === "passed"`
 
 **Linters (filter non-errors):**
-- [ ] `eslint` - filter where `severity < 2` (keep only errors)
-- [ ] `golangci-lint` - filter where `severity === "warning"` (optional)
-- [ ] `tsc` - keep all (errors only by default)
-- [ ] `ruff` - keep all (no severity levels)
+- [x] `eslint` - filter where `severity < 2` (keep only errors)
+- [x] `golangci-lint` - filter where `severity === "warning"` (optional)
+- [x] `tsc` - keep all (errors only by default)
+- [x] `ruff` - keep all (no severity levels)
 
 #### Output Format
 ```json
@@ -437,18 +437,18 @@ Define which parsers use success filtering and how to detect success:
 ```
 
 #### E2E Tests
-- [ ] Success filter enabled by default for test commands
-- [ ] Success filter enabled by default for lint commands
-- [ ] Passing tests are removed, failures preserved
-- [ ] Summary stats added with pass/fail/skip counts
-- [ ] `--disable-filter=success` shows all results
-- [ ] `--disable-filter=all` disables success filter and dedupe
-- [ ] `STRUCTURED_CLI_DISABLE_FILTER=success` env var works
-- [ ] Filter works correctly with empty results (all pass)
-- [ ] Filter works correctly with all failures
-- [ ] Filter chains correctly with dedupe filter
-- [ ] Non-test/lint commands are unaffected
-- [ ] Passthrough mode is unaffected
+- [x] Success filter enabled by default for test commands
+- [x] Success filter enabled by default for lint commands
+- [x] Passing tests are removed, failures preserved
+- [x] Summary stats added with pass/fail/skip counts
+- [x] `--disable-filter=success` shows all results
+- [x] `--disable-filter=all` disables success filter and dedupe
+- [x] `STRUCTURED_CLI_DISABLE_FILTER=success` env var works
+- [x] Filter works correctly with empty results (all pass)
+- [x] Filter works correctly with all failures
+- [x] Filter chains correctly with dedupe filter
+- [x] Non-test/lint commands are unaffected
+- [x] Passthrough mode is unaffected
 
 ### Phase 23: Small Output Filter
 Filter that detects terse CLI outputs and returns minimal JSON status instead of verbose structured data.
