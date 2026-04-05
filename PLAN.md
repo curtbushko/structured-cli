@@ -168,16 +168,16 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 - [x] Test binary build automation
 - [x] Temporary directory/repo management
 - [x] Step definitions for common operations
-- [ ] Add required tools to flake.nix for CI
+- [x] Add required tools to flake.nix for CI
 
 #### Git Commands E2E
 - [x] `git status` - clean repo, untracked files, modified files
 - [x] `git log` - basic output, commit fields, empty repo
 - [ ] `git diff` - unstaged changes, staged changes, hunks
 - [ ] `git branch` - list branches, current branch detection
-- [ ] `git show` - commit details
-- [ ] `git blame` - file attribution
-- [ ] `git reflog` - reference log
+- [x] `git show` - commit details
+- [x] `git blame` - file attribution
+- [x] `git reflog` - reference log
 
 #### Output Modes E2E
 - [x] Passthrough mode (default)
@@ -190,36 +190,36 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 - [x] Passthrough for unsupported commands
 
 #### Error Handling E2E
-- [ ] Command failure in JSON mode
-- [ ] Command failure in passthrough mode
-- [ ] Parser failure with raw output fallback
+- [x] Command failure in JSON mode
+- [x] Command failure in passthrough mode
+- [x] Parser failure with raw output fallback
 
 #### File Operations E2E
-- [ ] `ls` - list directory, specific path
-- [ ] `cat` - read file contents
-- [ ] `head`/`tail` - read first/last lines
-- [ ] `wc` - word count
-- [ ] `find` - search by name, type
-- [ ] `grep` - search in files
+- [x] `ls` - list directory, specific path
+- [x] `cat` - read file contents
+- [x] `head`/`tail` - read first/last lines
+- [x] `wc` - word count
+- [x] `find` - search by name, type
+- [x] `grep` - search in files
 - [ ] `du` - disk usage
 - [ ] `df` - disk free
 
 #### Go Commands E2E (if go available)
-- [ ] `go build` - successful build, build errors
-- [ ] `go test` - run tests, with coverage
-- [ ] `go vet` - static analysis
-- [ ] `go fmt` - format check
+- [x] `go build` - successful build, build errors
+- [x] `go test` - run tests, with coverage
+- [x] `go vet` - static analysis
+- [x] `go fmt` - format check
 
 #### NPM Commands E2E (if npm available)
-- [ ] `npm list` - dependency tree
-- [ ] `npm outdated` - outdated packages
+- [x] `npm list` - dependency tree
+- [x] `npm outdated` - outdated packages
 
 #### Docker Commands E2E (if docker available)
-- [ ] `docker ps` - list containers
-- [ ] `docker images` - list images
+- [x] `docker ps` - list containers
+- [x] `docker images` - list images
 
 #### Make/Just Commands E2E
-- [ ] `make` - successful build, target listing
+- [x] `make` - successful build, target listing
 - [ ] `just` - recipe execution, listing
 
 ### Phase 20: SQLite Usage Tracking System
