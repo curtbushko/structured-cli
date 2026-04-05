@@ -173,8 +173,8 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 #### Git Commands E2E
 - [x] `git status` - clean repo, untracked files, modified files
 - [x] `git log` - basic output, commit fields, empty repo
-- [ ] `git diff` - unstaged changes, staged changes, hunks
-- [ ] `git branch` - list branches, current branch detection
+- [x] `git diff` - unstaged changes, staged changes, hunks
+- [x] `git branch` - list branches, current branch detection
 - [x] `git show` - commit details
 - [x] `git blame` - file attribution
 - [x] `git reflog` - reference log
@@ -201,8 +201,8 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 - [x] `wc` - word count
 - [x] `find` - search by name, type
 - [x] `grep` - search in files
-- [ ] `du` - disk usage
-- [ ] `df` - disk free
+- [x] `du` - disk usage
+- [x] `df` - disk free
 
 #### Go Commands E2E (if go available)
 - [x] `go build` - successful build, build errors
@@ -220,7 +220,7 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 
 #### Make/Just Commands E2E
 - [x] `make` - successful build, target listing
-- [ ] `just` - recipe execution, listing
+- [x] `just` - recipe execution, listing
 
 ### Phase 20: SQLite Usage Tracking System
 Token usage tracking inspired by RTK (Rust Token Killer) for analytics and measuring value.
