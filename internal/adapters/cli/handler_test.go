@@ -233,3 +233,123 @@ func TestHandler_ExecuteWithArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestTransformLsArgs(t *testing.T) {
+	tests := []struct {
+		name        string
+		subcommands []string
+		args        []string
+		wantAdded   bool // whether -l should be added to result
+	}{
+		{
+			name:        "plain ls adds -l",
+			subcommands: []string{},
+			args:        []string{},
+			wantAdded:   true,
+		},
+		{
+			name:        "ls with path adds -l",
+			subcommands: []string{},
+			args:        []string{"/tmp"},
+			wantAdded:   true,
+		},
+		{
+			name:        "ls -a adds -l",
+			subcommands: []string{"-a"},
+			args:        []string{},
+			wantAdded:   true,
+		},
+		{
+			name:        "ls -l already present - no add",
+			subcommands: []string{"-l"},
+			args:        []string{},
+			wantAdded:   false,
+		},
+		{
+			name:        "ls -la already has l - no add",
+			subcommands: []string{"-la"},
+			args:        []string{},
+			wantAdded:   false,
+		},
+		{
+			name:        "ls -al already has l - no add",
+			subcommands: []string{"-al"},
+			args:        []string{},
+			wantAdded:   false,
+		},
+		{
+			name:        "ls -lh already has l - no add",
+			subcommands: []string{"-lh"},
+			args:        []string{},
+			wantAdded:   false,
+		},
+		{
+			name:        "ls with -l in args - no add",
+			subcommands: []string{},
+			args:        []string{"-l", "/tmp"},
+			wantAdded:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := transformLsArgs(tt.subcommands, tt.args)
+
+			// Check if -l was added (result should have -l as first element if added)
+			added := len(result) > 0 && result[0] == "-l" && (len(tt.args) == 0 || tt.args[0] != "-l")
+
+			if added != tt.wantAdded {
+				t.Errorf("transformLsArgs() added -l = %v, want %v, result = %v", added, tt.wantAdded, result)
+			}
+		})
+	}
+}
+
+func TestTransformArgs_Ls(t *testing.T) {
+	tests := []struct {
+		name        string
+		cmdName     string
+		subcommands []string
+		args        []string
+		wantFirst   string
+	}{
+		{
+			name:        "ls without -l gets -l added",
+			cmdName:     "ls",
+			subcommands: []string{},
+			args:        []string{},
+			wantFirst:   "-l",
+		},
+		{
+			name:        "ls with path gets -l prepended",
+			cmdName:     "ls",
+			subcommands: []string{},
+			args:        []string{"/tmp"},
+			wantFirst:   "-l",
+		},
+		{
+			name:        "non-ls command unchanged",
+			cmdName:     "cat",
+			subcommands: []string{},
+			args:        []string{"file.txt"},
+			wantFirst:   "file.txt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := transformArgs(tt.cmdName, tt.subcommands, tt.args)
+
+			if len(result) == 0 {
+				if tt.wantFirst != "" {
+					t.Errorf("transformArgs() returned empty, want first = %q", tt.wantFirst)
+				}
+				return
+			}
+
+			if result[0] != tt.wantFirst {
+				t.Errorf("transformArgs() first = %q, want %q", result[0], tt.wantFirst)
+			}
+		})
+	}
+}

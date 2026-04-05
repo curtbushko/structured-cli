@@ -96,7 +96,32 @@ var gitStatusArgs = []string{"--porcelain=v2", "--branch"}
 // transformArgs modifies command arguments to produce parseable output.
 // Some commands need special flags to output in a format the parser can handle.
 func transformArgs(cmdName string, subcommands []string, args []string) []string {
-	if cmdName != "git" || len(subcommands) == 0 {
+	switch cmdName {
+	case "ls":
+		return transformLsArgs(subcommands, args)
+	case "git":
+		return transformGitArgs(subcommands, args)
+	}
+	return args
+}
+
+// transformLsArgs adds -l flag to ls if not present, so we can detect file types.
+func transformLsArgs(subcommands []string, args []string) []string {
+	// Check if -l is already present in subcommands or args
+	allArgs := append(subcommands, args...)
+	for _, arg := range allArgs {
+		if arg == "-l" || arg == "-la" || arg == "-al" || arg == "-lh" ||
+			strings.Contains(arg, "l") && strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--") {
+			return args
+		}
+	}
+	// Add -l flag to get file type information
+	return append([]string{"-l"}, args...)
+}
+
+// transformGitArgs modifies git command arguments for parseable output.
+func transformGitArgs(subcommands []string, args []string) []string {
+	if len(subcommands) == 0 {
 		return args
 	}
 

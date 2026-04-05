@@ -87,9 +87,10 @@ func (p *LSParser) parseLine(line string) LSEntry {
 	}
 
 	// Simple format - just the filename
+	// Note: In JSON mode, -l is auto-added so this branch is rarely hit
 	return LSEntry{
 		Name: line,
-		Type: TypeFile, // Default to file for simple listing
+		Type: TypeFile, // Default to file for simple listing (rare in JSON mode)
 	}
 }
 
