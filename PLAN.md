@@ -551,8 +551,8 @@ Add minimal output patterns to existing parsers:
 
 #### Tracking Integration
 - [x] Small filter outputs should show positive token savings in stats
-- [ ] Track filter activation count in stats (`--by-filter` breakdown)
-- [ ] Exclude filtered commands from "negative savings" calculations
+- [x] Track filter activation count in stats (`--by-filter` breakdown)
+- [x] Exclude filtered commands from "negative savings" calculations
 
 #### E2E Tests
 - [x] Small filter enabled by default for JSON mode
@@ -564,7 +564,7 @@ Add minimal output patterns to existing parsers:
 - [x] `STRUCTURED_CLI_DISABLE_FILTER=small` env var works
 - [x] Filter does not trigger when output exceeds threshold
 - [x] Filter does not trigger when output contains actionable data
-- [ ] Filter chains correctly with success and dedupe filters
+- [x] Filter chains correctly with success and dedupe filters
 - [x] Passthrough mode is unaffected
 - [x] Stats tracking shows improved savings with filter enabled
 
