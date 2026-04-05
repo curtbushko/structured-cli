@@ -33,7 +33,7 @@ A Go CLI wrapper that transforms raw CLI output into structured JSON.
 ### Phase 3: Core Services
 - [x] Implement `services/executor.go` (main orchestration)
 - [x] Implement `services/matcher.go` (command → parser matching)
-- [ ] Implement `services/validator.go` (schema validation)
+- [x] Implement `services/validator.go` (schema validation)
 
 ### Phase 4: Adapters - Infrastructure
 - [x] Implement `adapters/runner/exec.go` (os/exec wrapper)
