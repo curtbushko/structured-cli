@@ -226,42 +226,42 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 Token usage tracking inspired by RTK (Rust Token Killer) for analytics and measuring value.
 
 #### Domain Layer
-- [ ] Define `domain/tracking.go` (CommandRecord, ParseFailure types)
-- [ ] Define `domain/stats.go` (StatsSummary, CommandStats types)
+- [x] Define `domain/tracking.go` (CommandRecord, ParseFailure types)
+- [x] Define `domain/stats.go` (StatsSummary, CommandStats types)
 
 #### Ports Layer
-- [ ] Define `ports/tracker.go` (Tracker interface with Record, GetStats, Cleanup methods)
+- [x] Define `ports/tracker.go` (Tracker interface with Record, GetStats, Cleanup methods)
 
 #### Adapters - SQLite Implementation
-- [ ] Implement `adapters/tracking/sqlite.go` (SQLite tracker)
-- [ ] Implement `adapters/tracking/noop.go` (No-op tracker for testing/disabled)
-- [ ] XDG Base Directory support (`~/.local/share/structured-cli/tracking.db`)
-- [ ] Database schema creation (commands table, parse_failures table)
-- [ ] 90-day automatic retention cleanup on insert
-- [ ] Token estimation (chars/4 heuristic)
+- [x] Implement `adapters/tracking/sqlite.go` (SQLite tracker)
+- [x] Implement `adapters/tracking/noop.go` (No-op tracker for testing/disabled)
+- [x] XDG Base Directory support (`~/.local/share/structured-cli/tracking.db`)
+- [x] Database schema creation (commands table, parse_failures table)
+- [x] 90-day automatic retention cleanup on insert
+- [x] Token estimation (chars/4 heuristic)
 
 #### Application Layer Integration
-- [ ] Add TimedExecution pattern to executor
-- [ ] Track successful parses (command, tokens, savings, exec time)
-- [ ] Track parse failures (command, error, fallback success)
-- [ ] Wire tracker into composition root
+- [x] Add TimedExecution pattern to executor
+- [x] Track successful parses (command, tokens, savings, exec time)
+- [x] Track parse failures (command, error, fallback success)
+- [x] Wire tracker into composition root
 
 #### Stats Subcommand
-- [ ] Implement `stats` subcommand in CLI handler
-- [ ] Summary report (total commands, tokens saved, avg savings %)
-- [ ] `--history` flag for recent commands
-- [ ] `--json` flag for JSON export
-- [ ] `--by-parser` flag for per-parser breakdown
-- [ ] `--project` flag for current directory only
+- [x] Implement `stats` subcommand in CLI handler
+- [x] Summary report (total commands, tokens saved, avg savings %)
+- [x] `--history` flag for recent commands
+- [x] `--json` flag for JSON export
+- [x] `--by-parser` flag for per-parser breakdown
+- [x] `--project` flag for current directory only
 
 #### E2E Tests
-- [ ] Tracking records commands after JSON output
-- [ ] Tracking calculates token savings correctly
-- [ ] Stats command shows summary
-- [ ] Stats --history shows recent commands
-- [ ] Stats --json outputs valid JSON
-- [ ] 90-day cleanup removes old records
-- [ ] Disabled tracking (STRUCTURED_CLI_NO_TRACKING=1)
+- [x] Tracking records commands after JSON output
+- [x] Tracking calculates token savings correctly
+- [x] Stats command shows summary
+- [x] Stats --history shows recent commands
+- [x] Stats --json outputs valid JSON
+- [x] 90-day cleanup removes old records
+- [x] Disabled tracking (STRUCTURED_CLI_NO_TRACKING=1)
 
 ### Phase 21: Output Deduplication System
 Generic deduplication layer to reduce token usage by collapsing identical items.
@@ -480,49 +480,49 @@ Filter that detects terse CLI outputs and returns minimal JSON status instead of
 - Preserves full output when content exceeds threshold or contains actionable data
 
 #### Domain Layer
-- [ ] Define `domain/small_filter.go` (SmallOutputConfig, SmallOutputResult types)
-- [ ] Add `IsMinimal() bool` method signature to parser interface (optional)
-- [ ] Define threshold constants (MIN_TOKEN_THRESHOLD = 25)
+- [x] Define `domain/small_filter.go` (SmallOutputConfig, SmallOutputResult types)
+- [x] Add `IsMinimal() bool` method signature to parser interface (optional)
+- [x] Define threshold constants (MIN_TOKEN_THRESHOLD = 25)
 
 #### Ports Layer
-- [ ] Extend `ports/filter.go` with SmallOutputFilter interface
-- [ ] Define MinimalPattern type for parser-specific detection
+- [x] Extend `ports/filter.go` with SmallOutputFilter interface
+- [x] Define MinimalPattern type for parser-specific detection
 
 #### Application Layer
-- [ ] Implement `application/small_filter.go`
-- [ ] Token count check: if rawTokens < threshold, check for minimal pattern
-- [ ] Pattern matching for known "clean/empty" outputs per command
-- [ ] Return compact status JSON when filter triggers
-- [ ] Integrate into executor pipeline (before other filters)
+- [x] Implement `application/small_filter.go`
+- [x] Token count check: if rawTokens < threshold, check for minimal pattern
+- [x] Pattern matching for known "clean/empty" outputs per command
+- [x] Return compact status JSON when filter triggers
+- [x] Integrate into executor pipeline (before other filters)
 
 #### Parser Integration
 Add minimal output patterns to existing parsers:
 
 **Git:**
-- [ ] `git status` - matches "nothing to commit" or "working tree clean"
-- [ ] `git stash list` - empty output
-- [ ] `git diff` - empty output (no changes)
+- [x] `git status` - matches "nothing to commit" or "working tree clean"
+- [x] `git stash list` - empty output
+- [x] `git diff` - empty output (no changes)
 
 **Package Managers:**
-- [ ] `npm audit` - matches "found 0 vulnerabilities"
-- [ ] `npm outdated` - empty output (all up to date)
-- [ ] `pip-audit` - matches "No known vulnerabilities"
+- [x] `npm audit` - matches "found 0 vulnerabilities"
+- [x] `npm outdated` - empty output (all up to date)
+- [x] `pip-audit` - matches "No known vulnerabilities"
 
 **Build Tools:**
-- [ ] `go build` - empty output
-- [ ] `cargo build` - matches "Finished" without warnings/errors
-- [ ] `tsc` - empty output (no errors)
+- [x] `go build` - empty output
+- [x] `cargo build` - matches "Finished" without warnings/errors
+- [x] `tsc` - empty output (no errors)
 
 **Linters:**
-- [ ] `eslint` - empty output or 0 problems
-- [ ] `golangci-lint` - empty output
-- [ ] `ruff` - empty output
+- [x] `eslint` - empty output or 0 problems
+- [x] `golangci-lint` - empty output
+- [x] `ruff` - empty output
 
 #### CLI Integration
-- [ ] Small filter enabled by default in JSON mode
-- [ ] Add `--disable-filter=small` flag to get full structured output
-- [ ] Add `STRUCTURED_CLI_DISABLE_FILTER=small` environment variable
-- [ ] Combine with other filters: `--disable-filter=small,success,dedupe`
+- [x] Small filter enabled by default in JSON mode
+- [x] Add `--disable-filter=small` flag to get full structured output
+- [x] Add `STRUCTURED_CLI_DISABLE_FILTER=small` environment variable
+- [x] Combine with other filters: `--disable-filter=small,success,dedupe`
 
 #### Output Format
 ```json
@@ -550,23 +550,23 @@ Add minimal output patterns to existing parsers:
 ```
 
 #### Tracking Integration
-- [ ] Small filter outputs should show positive token savings in stats
+- [x] Small filter outputs should show positive token savings in stats
 - [ ] Track filter activation count in stats (`--by-filter` breakdown)
 - [ ] Exclude filtered commands from "negative savings" calculations
 
 #### E2E Tests
-- [ ] Small filter enabled by default for JSON mode
-- [ ] Clean `git status` returns compact status JSON
-- [ ] Empty `git stash list` returns compact status JSON
-- [ ] `npm audit` with 0 vulnerabilities returns compact status
-- [ ] `--disable-filter=small` returns full structured output
-- [ ] `--disable-filter=all` disables small filter
-- [ ] `STRUCTURED_CLI_DISABLE_FILTER=small` env var works
-- [ ] Filter does not trigger when output exceeds threshold
-- [ ] Filter does not trigger when output contains actionable data
+- [x] Small filter enabled by default for JSON mode
+- [x] Clean `git status` returns compact status JSON
+- [x] Empty `git stash list` returns compact status JSON
+- [x] `npm audit` with 0 vulnerabilities returns compact status
+- [x] `--disable-filter=small` returns full structured output
+- [x] `--disable-filter=all` disables small filter
+- [x] `STRUCTURED_CLI_DISABLE_FILTER=small` env var works
+- [x] Filter does not trigger when output exceeds threshold
+- [x] Filter does not trigger when output contains actionable data
 - [ ] Filter chains correctly with success and dedupe filters
-- [ ] Passthrough mode is unaffected
-- [ ] Stats tracking shows improved savings with filter enabled
+- [x] Passthrough mode is unaffected
+- [x] Stats tracking shows improved savings with filter enabled
 
 ---
 
