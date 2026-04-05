@@ -22,11 +22,12 @@ import (
 // Handler manages CLI interactions using cobra.
 // It coordinates between user input, command execution, and output formatting.
 type Handler struct {
-	runner      ports.CommandRunner
-	registry    ports.ParserRegistry
-	tracker     ports.Tracker
-	smallFilter ports.SmallOutputFilter
-	rootCmd     *cobra.Command
+	runner       ports.CommandRunner
+	registry     ports.ParserRegistry
+	tracker      ports.Tracker
+	smallFilter  ports.SmallOutputFilter
+	deduplicator ports.Deduplicator
+	rootCmd      *cobra.Command
 }
 
 // NewHandler creates a new CLI Handler with the given dependencies.
@@ -72,6 +73,27 @@ func NewHandlerWithSmallFilter(
 		registry:    registry,
 		tracker:     tracker,
 		smallFilter: smallFilter,
+	}
+	h.rootCmd = h.buildRootCommand()
+	return h
+}
+
+// NewHandlerWithDeduplicator creates a new CLI Handler with deduplication support.
+// The deduplicator collapses duplicate items in parsed output.
+// If deduplicator is nil, deduplication is disabled.
+func NewHandlerWithDeduplicator(
+	runner ports.CommandRunner,
+	registry ports.ParserRegistry,
+	tracker ports.Tracker,
+	smallFilter ports.SmallOutputFilter,
+	deduplicator ports.Deduplicator,
+) *Handler {
+	h := &Handler{
+		runner:       runner,
+		registry:     registry,
+		tracker:      tracker,
+		smallFilter:  smallFilter,
+		deduplicator: deduplicator,
 	}
 	h.rootCmd = h.buildRootCommand()
 	return h
@@ -237,8 +259,9 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 	// Extract --disable-filter flag
 	disableFilters, remaining := ExtractDisableFilter(remaining)
 
-	// Determine if small filter should be disabled
+	// Determine if filters should be disabled
 	smallFilterDisabled := ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter)
+	dedupDisabled := ShouldDisableFilter(FilterNameDedupe, disableFilters, envDisableFilter)
 
 	// Parse args into Command
 	if len(remaining) == 0 {
@@ -289,16 +312,15 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 	h.trackExecution(ctx, cmd, raw, result, execTime, parseErr)
 
 	// Apply small filter if enabled and in JSON mode
-	if outputJSON && !smallFilterDisabled && h.smallFilter != nil && parseErr == nil && exitCode == 0 {
-		tokenCount := domain.EstimateTokens(raw)
-		if h.smallFilter.ShouldFilter(raw, tokenCount, cmd.Name, cmd.Subcommands) {
-			smallResult := h.smallFilter.Filter(raw)
-			return h.writeSmallFilterResult(out, smallResult)
-		}
+	if smallResult, ok := h.applySmallFilter(outputJSON, smallFilterDisabled, raw, parseErr, exitCode, cmd); ok {
+		return h.writeSmallFilterResult(out, smallResult)
 	}
 
+	// Apply deduplication if enabled and in JSON mode
+	dedupStats := h.applyDeduplication(outputJSON, dedupDisabled, parseErr, exitCode, &result)
+
 	// Write output based on mode
-	if err := h.writeOutput(out, outputJSON, result, schema); err != nil {
+	if err := h.writeOutputWithDedup(out, outputJSON, result, schema, dedupStats); err != nil {
 		return err
 	}
 
@@ -314,6 +336,54 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 func (h *Handler) writeSmallFilterResult(out io.Writer, result domain.SmallOutputResult) error {
 	enc := json.NewEncoder(out)
 	return enc.Encode(result)
+}
+
+// applySmallFilter checks if small filter should be applied and returns the filtered result.
+// Returns the filtered result and true if applied, or empty result and false otherwise.
+func (h *Handler) applySmallFilter(
+	outputJSON, disabled bool,
+	raw string,
+	parseErr error,
+	exitCode int,
+	cmd domain.Command,
+) (domain.SmallOutputResult, bool) {
+	if !outputJSON || disabled || h.smallFilter == nil || parseErr != nil || exitCode != 0 {
+		return domain.SmallOutputResult{}, false
+	}
+
+	tokenCount := domain.EstimateTokens(raw)
+	if !h.smallFilter.ShouldFilter(raw, tokenCount, cmd.Name, cmd.Subcommands) {
+		return domain.SmallOutputResult{}, false
+	}
+
+	return h.smallFilter.Filter(raw), true
+}
+
+// applyDeduplication applies deduplication to the result data if conditions are met.
+// Returns dedup stats if there was a reduction, or nil otherwise.
+func (h *Handler) applyDeduplication(
+	outputJSON, disabled bool,
+	parseErr error,
+	exitCode int,
+	result *domain.ParseResult,
+) *domain.DedupResult {
+	if !outputJSON || disabled || h.deduplicator == nil || parseErr != nil || exitCode != 0 {
+		return nil
+	}
+
+	if result.Data == nil {
+		return nil
+	}
+
+	dedupedData, stats := h.deduplicator.Dedupe(result.Data)
+	result.Data = dedupedData
+
+	// Only include stats if there was actual reduction
+	if stats.OriginalCount > 0 && stats.OriginalCount != stats.DedupedCount {
+		return &stats
+	}
+
+	return nil
 }
 
 // parseOutputWithError processes command output through a parser or returns passthrough result.
@@ -384,10 +454,16 @@ func (h *Handler) handleError(out io.Writer, outputJSON bool, err error, exitCod
 	return err
 }
 
-// writeOutput writes the result in the appropriate format.
-func (h *Handler) writeOutput(out io.Writer, outputJSON bool, result domain.ParseResult, _ domain.Schema) error {
+// writeOutputWithDedup writes the result with optional dedup stats.
+func (h *Handler) writeOutputWithDedup(
+	out io.Writer,
+	outputJSON bool,
+	result domain.ParseResult,
+	_ domain.Schema,
+	dedupStats *domain.DedupResult,
+) error {
 	if outputJSON {
-		return h.writeJSON(out, result)
+		return h.writeJSONWithDedup(out, result, dedupStats)
 	}
 	return h.writePassthrough(out, result)
 }
@@ -415,6 +491,67 @@ func (h *Handler) writeJSON(out io.Writer, result domain.ParseResult) error {
 
 	enc := json.NewEncoder(out)
 	return enc.Encode(output)
+}
+
+// writeJSONWithDedup writes the result as JSON with optional dedup stats.
+func (h *Handler) writeJSONWithDedup(
+	out io.Writer,
+	result domain.ParseResult,
+	dedupStats *domain.DedupResult,
+) error {
+	// If no dedup stats, use regular writeJSON to avoid wrapping structs
+	if dedupStats == nil {
+		return h.writeJSON(out, result)
+	}
+
+	// When we have dedup stats, we need to convert to map to add the stats field
+	var output map[string]any
+
+	if result.Error != nil {
+		output = map[string]any{
+			"error":    result.Error.Error(),
+			"exitCode": result.ExitCode,
+			"raw":      result.Raw,
+		}
+	} else if result.Data != nil {
+		// Convert struct to map to add dedupStats
+		output = h.dataToMap(result.Data)
+	} else {
+		// Unparsed output - passthrough with wrapper
+		output = map[string]any{
+			"raw":      result.Raw,
+			"parsed":   false,
+			"exitCode": result.ExitCode,
+		}
+	}
+
+	// Add dedupStats
+	output["dedupStats"] = dedupStats
+
+	enc := json.NewEncoder(out)
+	return enc.Encode(output)
+}
+
+// dataToMap converts result data (struct or map) to map[string]any.
+// This is needed when we need to add additional fields like dedupStats.
+func (h *Handler) dataToMap(data any) map[string]any {
+	// If already a map, return it directly
+	if m, ok := data.(map[string]any); ok {
+		return m
+	}
+
+	// Convert via JSON serialization/deserialization
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return map[string]any{"data": data}
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(jsonBytes, &result); err != nil {
+		return map[string]any{"data": data}
+	}
+
+	return result
 }
 
 // writePassthrough writes the raw output unchanged.

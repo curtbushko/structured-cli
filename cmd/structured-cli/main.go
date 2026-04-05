@@ -151,8 +151,11 @@ func run() int {
 	// Create small filter with default patterns
 	smallFilter := createSmallFilter()
 
-	// Create CLI handler (inbound adapter) with tracker and small filter
-	handler := cli.NewHandlerWithSmallFilter(execRunner, registry, tracker, smallFilter)
+	// Create deduplicator for collapsing duplicate items in output
+	deduper := application.NewDeduper()
+
+	// Create CLI handler (inbound adapter) with tracker, small filter, and deduplicator
+	handler := cli.NewHandlerWithDeduplicator(execRunner, registry, tracker, smallFilter, deduper)
 
 	// Execute the CLI and propagate exit code
 	err := handler.Run()
