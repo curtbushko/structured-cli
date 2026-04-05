@@ -11,6 +11,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -21,17 +22,56 @@ import (
 // Handler manages CLI interactions using cobra.
 // It coordinates between user input, command execution, and output formatting.
 type Handler struct {
-	runner   ports.CommandRunner
-	registry ports.ParserRegistry
-	rootCmd  *cobra.Command
+	runner      ports.CommandRunner
+	registry    ports.ParserRegistry
+	tracker     ports.Tracker
+	smallFilter ports.SmallOutputFilter
+	rootCmd     *cobra.Command
 }
 
 // NewHandler creates a new CLI Handler with the given dependencies.
 // The runner executes commands; the registry finds parsers for command output.
+// Tracking is disabled (nil tracker).
 func NewHandler(runner ports.CommandRunner, registry ports.ParserRegistry) *Handler {
 	h := &Handler{
 		runner:   runner,
 		registry: registry,
+		tracker:  nil,
+	}
+	h.rootCmd = h.buildRootCommand()
+	return h
+}
+
+// NewHandlerWithTracker creates a new CLI Handler with tracking support.
+// If tracker is nil, tracking is disabled.
+func NewHandlerWithTracker(
+	runner ports.CommandRunner,
+	registry ports.ParserRegistry,
+	tracker ports.Tracker,
+) *Handler {
+	h := &Handler{
+		runner:   runner,
+		registry: registry,
+		tracker:  tracker,
+	}
+	h.rootCmd = h.buildRootCommand()
+	return h
+}
+
+// NewHandlerWithSmallFilter creates a new CLI Handler with small filter support.
+// The small filter compacts terse output to minimal JSON when enabled.
+// If filter is nil, small filtering is disabled.
+func NewHandlerWithSmallFilter(
+	runner ports.CommandRunner,
+	registry ports.ParserRegistry,
+	tracker ports.Tracker,
+	smallFilter ports.SmallOutputFilter,
+) *Handler {
+	h := &Handler{
+		runner:      runner,
+		registry:    registry,
+		tracker:     tracker,
+		smallFilter: smallFilter,
 	}
 	h.rootCmd = h.buildRootCommand()
 	return h
@@ -66,6 +106,9 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 		DisableFlagParsing: true,
 		SilenceUsage:       true,
 		SilenceErrors:      true,
+		// Allow arbitrary args so that unknown commands (ls, git, etc.) are passed through
+		// instead of being rejected as unknown subcommands
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Handle --help and -h specially since we disable flag parsing
 			// Only check if -h or --help appears BEFORE the command name
@@ -82,6 +125,11 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 			envJSON := os.Getenv(EnvJSONKey)
 			return h.ExecuteWithArgs(cmd.Context(), args, envJSON, cmd.OutOrStdout())
 		},
+	}
+
+	// Add stats subcommand if tracker is available
+	if h.tracker != nil {
+		cmd.AddCommand(buildStatsCommand(h.tracker))
 	}
 
 	return cmd
@@ -162,13 +210,35 @@ func transformGitArgs(subcommands []string, args []string) []string {
 // 1. Extracts the --json flag from args
 // 2. Determines output mode from flag and env var
 // 3. Parses the remaining args into a Command
-// 4. Executes the command via the runner
+// 4. Executes the command via the runner (timed)
 // 5. Parses output if a parser is registered
-// 6. Writes output in the appropriate format
+// 6. Tracks the execution (if tracker is configured)
+// 7. Applies small filter if enabled
+// 8. Writes output in the appropriate format
 func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON string, out io.Writer) error {
+	// Get env var for disable filter
+	envDisableFilter := os.Getenv(EnvDisableFilterKey)
+	return h.ExecuteWithArgsAndEnv(ctx, args, envJSON, envDisableFilter, out)
+}
+
+// ExecuteWithArgsAndEnv runs the handler with the given arguments and environment values.
+// This variant allows explicit passing of environment values for testing.
+func (h *Handler) ExecuteWithArgsAndEnv(
+	ctx context.Context,
+	args []string,
+	envJSON string,
+	envDisableFilter string,
+	out io.Writer,
+) error {
 	// Extract --json flag and determine output mode
 	jsonFlag, remaining := ExtractJSONFlag(args)
 	outputJSON := ShouldOutputJSON(jsonFlag, envJSON)
+
+	// Extract --disable-filter flag
+	disableFilters, remaining := ExtractDisableFilter(remaining)
+
+	// Determine if small filter should be disabled
+	smallFilterDisabled := ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter)
 
 	// Parse args into Command
 	if len(remaining) == 0 {
@@ -185,6 +255,9 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	if outputJSON {
 		transformedArgs = transformArgs(cmd.Name, cmd.Subcommands, cmd.Args)
 	}
+
+	// Start timing the execution
+	startTime := time.Now()
 
 	// Execute the command
 	cmdArgs := append(cmd.Subcommands, transformedArgs...)
@@ -207,7 +280,22 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	// Look up parser for this command
 	parser, found := h.registry.Find(cmd.Name, cmd.Subcommands)
 
-	result, schema := h.parseOutput(parser, found, raw, stderrStr, exitCode)
+	result, schema, parseErr := h.parseOutputWithError(parser, found, raw, stderrStr, exitCode)
+
+	// Calculate execution time
+	execTime := time.Since(startTime)
+
+	// Track the execution (errors are logged but do not fail command execution)
+	h.trackExecution(ctx, cmd, raw, result, execTime, parseErr)
+
+	// Apply small filter if enabled and in JSON mode
+	if outputJSON && !smallFilterDisabled && h.smallFilter != nil && parseErr == nil && exitCode == 0 {
+		tokenCount := domain.EstimateTokens(raw)
+		if h.smallFilter.ShouldFilter(raw, tokenCount, cmd.Name, cmd.Subcommands) {
+			smallResult := h.smallFilter.Filter(raw)
+			return h.writeSmallFilterResult(out, smallResult)
+		}
+	}
 
 	// Write output based on mode
 	if err := h.writeOutput(out, outputJSON, result, schema); err != nil {
@@ -222,8 +310,15 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	return nil
 }
 
-// parseOutput processes command output through a parser or returns passthrough result.
-func (h *Handler) parseOutput(parser ports.Parser, found bool, raw, stderrStr string, exitCode int) (domain.ParseResult, domain.Schema) {
+// writeSmallFilterResult writes the small filter result as JSON.
+func (h *Handler) writeSmallFilterResult(out io.Writer, result domain.SmallOutputResult) error {
+	enc := json.NewEncoder(out)
+	return enc.Encode(result)
+}
+
+// parseOutputWithError processes command output through a parser or returns passthrough result.
+// It also returns the parse error (if any) for tracking purposes.
+func (h *Handler) parseOutputWithError(parser ports.Parser, found bool, raw, stderrStr string, exitCode int) (domain.ParseResult, domain.Schema, error) {
 	var result domain.ParseResult
 	var schema domain.Schema
 
@@ -232,16 +327,17 @@ func (h *Handler) parseOutput(parser ports.Parser, found bool, raw, stderrStr st
 		if stderrStr != "" {
 			raw = raw + stderrStr
 		}
-		return domain.NewParseResult(nil, raw, exitCode), schema
+		return domain.NewParseResult(nil, raw, exitCode), schema, nil
 	}
 
 	// Check for fatal errors like "not a git repository"
 	if isFatalError(exitCode, raw, stderrStr) {
+		fatalErr := errors.New(strings.TrimSpace(stderrStr))
 		return domain.NewParseResultWithError(
-			errors.New(strings.TrimSpace(stderrStr)),
+			fatalErr,
 			stderrStr,
 			exitCode,
-		), schema
+		), schema, fatalErr
 	}
 
 	// Parse the output (include stderr if stdout is empty)
@@ -253,17 +349,18 @@ func (h *Handler) parseOutput(parser ports.Parser, found bool, raw, stderrStr st
 	schema = parser.Schema()
 	result, err := parser.Parse(strings.NewReader(parseInput))
 	if err != nil {
+		wrappedErr := fmt.Errorf("parse error: %w", err)
 		return domain.NewParseResultWithError(
-			fmt.Errorf("parse error: %w", err),
+			wrappedErr,
 			parseInput,
 			exitCode,
-		), schema
+		), schema, wrappedErr
 	}
 
 	result.ExitCode = exitCode
 	result.Raw = parseInput
 	syncExitCodeAndSuccess(result.Data, exitCode)
-	return result, schema
+	return result, schema, nil
 }
 
 // isFatalError checks if the command output indicates a fatal error.
@@ -363,4 +460,68 @@ func syncExitCodeAndSuccess(data any, exitCode int) {
 			successField.SetBool(false)
 		}
 	}
+}
+
+// trackExecution records the command execution metrics if tracking is enabled.
+// Any tracking errors are ignored to avoid failing command execution.
+func (h *Handler) trackExecution(
+	ctx context.Context,
+	cmd domain.Command,
+	raw string,
+	result domain.ParseResult,
+	execTime time.Duration,
+	parseErr error,
+) {
+	if h.tracker == nil {
+		return
+	}
+
+	// If there was a parse error, record it as a failure
+	if parseErr != nil {
+		h.recordParseFailure(ctx, cmd, parseErr)
+		return
+	}
+
+	// Calculate token metrics
+	rawTokens := domain.EstimateTokens(raw)
+	parsedJSON := h.serializeResult(result.Data)
+	parsedTokens := domain.EstimateTokens(parsedJSON)
+
+	// Get current working directory for project context
+	project, _ := os.Getwd()
+
+	// Create and record the command record
+	record := domain.NewCommandRecord(
+		cmd.Name,
+		cmd.Subcommands,
+		rawTokens,
+		parsedTokens,
+		execTime,
+		project,
+	)
+
+	// Record errors are logged but don't fail execution
+	_ = h.tracker.Record(ctx, record)
+}
+
+// recordParseFailure records a parse failure for tracking.
+func (h *Handler) recordParseFailure(ctx context.Context, cmd domain.Command, parseErr error) {
+	// Build full command string
+	cmdParts := append([]string{cmd.Name}, cmd.Subcommands...)
+	fullCmd := strings.Join(cmdParts, " ")
+
+	failure := domain.NewParseFailure(fullCmd, parseErr.Error(), true)
+	_ = h.tracker.RecordFailure(ctx, failure)
+}
+
+// serializeResult converts result data to JSON for token counting.
+func (h *Handler) serializeResult(data any) string {
+	if data == nil {
+		return ""
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return ""
+	}
+	return string(jsonBytes)
 }

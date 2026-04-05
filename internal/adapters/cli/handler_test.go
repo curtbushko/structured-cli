@@ -6,10 +6,22 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/curtbushko/structured-cli/internal/domain"
 	"github.com/curtbushko/structured-cli/internal/ports"
 )
+
+// mockTracker implements ports.Tracker for testing.
+type mockTracker struct {
+	recordCalled        bool
+	recordFailureCalled bool
+	lastRecord          domain.CommandRecord
+	lastFailure         domain.ParseFailure
+}
 
 // mockRunner implements ports.CommandRunner for testing.
 type mockRunner struct {
@@ -352,4 +364,70 @@ func TestTransformArgs_Ls(t *testing.T) {
 			}
 		})
 	}
+}
+
+func (m *mockTracker) Record(_ context.Context, record domain.CommandRecord) error {
+	m.recordCalled = true
+	m.lastRecord = record
+	return nil
+}
+
+func (m *mockTracker) RecordFailure(_ context.Context, failure domain.ParseFailure) error {
+	m.recordFailureCalled = true
+	m.lastFailure = failure
+	return nil
+}
+
+func (m *mockTracker) Stats(_ context.Context, _ ports.StatsOptions) (domain.StatsSummary, error) {
+	return domain.StatsSummary{}, nil
+}
+
+func (m *mockTracker) History(_ context.Context, _ int) ([]domain.CommandRecord, error) {
+	return nil, nil
+}
+
+func (m *mockTracker) StatsByParser(_ context.Context) ([]domain.CommandStats, error) {
+	return nil, nil
+}
+
+func (m *mockTracker) Cleanup(_ context.Context, _ time.Duration) error {
+	return nil
+}
+
+func (m *mockTracker) Close() error {
+	return nil
+}
+
+func TestHandler_TracksExecution(t *testing.T) {
+	// Arrange
+	runner := &mockRunner{stdout: "On branch main\nnothing to commit"}
+	registry := &mockRegistry{}
+	tracker := &mockTracker{}
+
+	h := NewHandlerWithTracker(runner, registry, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := h.ExecuteWithArgs(context.Background(), []string{"git", "status"}, "", &buf)
+
+	// Assert
+	require.NoError(t, err)
+	assert.True(t, tracker.recordCalled, "Tracker.Record should be called")
+	assert.Equal(t, "git", tracker.lastRecord.Command)
+	assert.Equal(t, []string{"status"}, tracker.lastRecord.Subcommands)
+}
+
+func TestHandler_SkipsTrackingWhenNilTracker(t *testing.T) {
+	// Arrange - handler with nil tracker (tracking disabled)
+	runner := &mockRunner{stdout: "On branch main"}
+	registry := &mockRegistry{}
+
+	h := NewHandler(runner, registry) // nil tracker
+
+	// Act
+	var buf bytes.Buffer
+	err := h.ExecuteWithArgs(context.Background(), []string{"git", "status"}, "", &buf)
+
+	// Assert - should succeed without panic
+	require.NoError(t, err)
 }

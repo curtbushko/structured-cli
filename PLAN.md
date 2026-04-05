@@ -222,6 +222,352 @@ Real-world e2e tests using godog with actual CLI tools and file systems.
 - [ ] `make` - successful build, target listing
 - [ ] `just` - recipe execution, listing
 
+### Phase 20: SQLite Usage Tracking System
+Token usage tracking inspired by RTK (Rust Token Killer) for analytics and measuring value.
+
+#### Domain Layer
+- [ ] Define `domain/tracking.go` (CommandRecord, ParseFailure types)
+- [ ] Define `domain/stats.go` (StatsSummary, CommandStats types)
+
+#### Ports Layer
+- [ ] Define `ports/tracker.go` (Tracker interface with Record, GetStats, Cleanup methods)
+
+#### Adapters - SQLite Implementation
+- [ ] Implement `adapters/tracking/sqlite.go` (SQLite tracker)
+- [ ] Implement `adapters/tracking/noop.go` (No-op tracker for testing/disabled)
+- [ ] XDG Base Directory support (`~/.local/share/structured-cli/tracking.db`)
+- [ ] Database schema creation (commands table, parse_failures table)
+- [ ] 90-day automatic retention cleanup on insert
+- [ ] Token estimation (chars/4 heuristic)
+
+#### Application Layer Integration
+- [ ] Add TimedExecution pattern to executor
+- [ ] Track successful parses (command, tokens, savings, exec time)
+- [ ] Track parse failures (command, error, fallback success)
+- [ ] Wire tracker into composition root
+
+#### Stats Subcommand
+- [ ] Implement `stats` subcommand in CLI handler
+- [ ] Summary report (total commands, tokens saved, avg savings %)
+- [ ] `--history` flag for recent commands
+- [ ] `--json` flag for JSON export
+- [ ] `--by-parser` flag for per-parser breakdown
+- [ ] `--project` flag for current directory only
+
+#### E2E Tests
+- [ ] Tracking records commands after JSON output
+- [ ] Tracking calculates token savings correctly
+- [ ] Stats command shows summary
+- [ ] Stats --history shows recent commands
+- [ ] Stats --json outputs valid JSON
+- [ ] 90-day cleanup removes old records
+- [ ] Disabled tracking (STRUCTURED_CLI_NO_TRACKING=1)
+
+### Phase 21: Output Deduplication System
+Generic deduplication layer to reduce token usage by collapsing identical items.
+
+#### Design Decision: Two-Stage Generic Deduplication
+
+**Approach:** Pure generic deduplication at two stages:
+
+1. **Raw text stage** - Before parsing, collapse identical lines in raw output
+2. **JSON object stage** - After parsing, collapse identical objects within same array level
+
+**Why generic instead of per-command?**
+- Single implementation, zero per-parser maintenance
+- Consistent behavior across all commands
+- Objects must be truly identical (all fields match) to deduplicate
+- Different objects naturally preserved (lint error on line 10 ≠ line 20)
+
+**Same-level rule:**
+- Objects are only compared within their own array
+- Nested arrays are processed independently
+- Prevents false deduplication across different contexts
+
+#### Domain Layer
+- [ ] Define `domain/dedup.go` (DedupConfig, DedupResult types)
+
+#### Ports Layer
+- [ ] Define `ports/deduplicator.go` (Deduplicator interface)
+
+#### Application Layer
+- [ ] Implement `application/dedup.go` (deduplication engine)
+- [ ] **Stage 1: Raw text dedup** - deduplicate identical lines before parsing
+- [ ] **Stage 2: JSON object dedup** - deduplicate identical objects at same array level
+- [ ] Objects must be at the same level in the JSON tree to be deduplicated
+- [ ] Add count field to grouped items (`"count": N`)
+- [ ] Keep first occurrence as sample
+- [ ] Integrate dedup step into executor pipeline
+
+#### CLI Integration
+- [ ] Deduplication enabled by default in JSON mode
+- [ ] Add `--disable-filter=dedupe` flag to disable deduplication
+- [ ] Add `--disable-filter=all` to disable all filters
+- [ ] Add `STRUCTURED_CLI_DISABLE_FILTER=dedupe` environment variable
+- [ ] Support comma-separated filters: `--disable-filter=dedupe,compact`
+
+#### Deduplication Rules
+- [ ] Raw text: identical lines are collapsed with count
+- [ ] JSON arrays: identical objects at the same level are collapsed
+- [ ] Object equality: deep comparison of all fields
+- [ ] Unique outputs (ls entries, container IDs) naturally don't dedupe
+- [ ] Repetitive outputs (lint errors, log lines) collapse automatically
+
+#### Output Format
+```json
+// Default JSON output (dedup ON, 100 items → 3 groups):
+// $ structured-cli eslint src/ --json
+{"issues": [
+  {"rule": "no-unused-vars", "file": "a.js", "line": 10, "count": 45, "sample": "first"},
+  {"rule": "semi", "file": "x.js", "line": 5, "count": 30, "sample": "first"},
+  {"rule": "indent", "file": "y.js", "line": 1, "count": 25, "sample": "first"}
+],
+"dedupStats": {"originalCount": 100, "dedupedCount": 3, "reduction": "97%"}}
+
+// With --disable-filter=dedupe (full output, 100 items):
+// $ structured-cli eslint src/ --json --disable-filter=dedupe
+{"issues": [
+  {"rule": "no-unused-vars", "file": "a.js", "line": 10},
+  {"rule": "no-unused-vars", "file": "b.js", "line": 20},
+  {"rule": "no-unused-vars", "file": "c.js", "line": 30},
+  ...
+]}
+```
+
+#### E2E Tests
+- [ ] Dedup enabled by default in JSON mode
+- [ ] Identical objects at same array level are collapsed with count
+- [ ] Different objects are preserved individually
+- [ ] Raw text dedup collapses identical lines
+- [ ] `--disable-filter=dedupe` disables deduplication
+- [ ] `--disable-filter=all` disables all filters
+- [ ] `STRUCTURED_CLI_DISABLE_FILTER=dedupe` env var works
+- [ ] Dedup preserves first occurrence as sample
+- [ ] Dedup adds `dedupStats` to output
+- [ ] Objects at different nesting levels are not deduplicated against each other
+- [ ] Dedup handles empty arrays gracefully
+- [ ] Passthrough mode (no --json) is unaffected by dedup
+
+### Phase 22: Success Message Filter
+Filter out success/passing results from test runners and linters to focus on actionable failures.
+
+#### Design Decision: Failure-Focus Filter
+
+**Problem:** Test and lint output often contains hundreds of passing items that consume tokens without providing actionable information. An AI agent typically only needs to see failures.
+
+**Solution:** Filter that removes success/passing items from output arrays, keeping only failures and a summary count.
+
+**Applies to:**
+- Test runners: jest, pytest, vitest, go test, cargo test, mocha
+- Linters: eslint, golangci-lint, ruff, mypy, tsc, prettier, biome
+- Build tools: go build, cargo build, tsc (warnings vs errors)
+
+**Behavior:**
+- Enabled by default for test/lint commands in JSON mode
+- Removes passing tests, successful checks from arrays
+- Adds summary: `{"passed": 45, "failed": 2, "skipped": 1}`
+- Preserves all failure details
+
+#### Domain Layer
+- [ ] Define `domain/filter.go` (FilterConfig, FilterResult types)
+- [ ] Define success/failure detection rules per output type
+
+#### Ports Layer
+- [ ] Define `ports/filter.go` (OutputFilter interface)
+
+#### Application Layer
+- [ ] Implement `application/success_filter.go`
+- [ ] Detect test results by status field (passed/failed/skipped/error)
+- [ ] Detect lint results by severity field (error/warning/info)
+- [ ] Remove passing items, preserve failures
+- [ ] Add summary stats to output
+- [ ] Integrate into executor pipeline (after parse, can chain with dedup)
+
+#### CLI Integration
+- [ ] Success filter enabled by default for test/lint commands
+- [ ] Add `--disable-filter=success` flag to show all results
+- [ ] Add `STRUCTURED_CLI_DISABLE_FILTER=success` environment variable
+- [ ] Combine with dedupe: `--disable-filter=success,dedupe`
+
+#### Parser Detection Rules
+Define which parsers use success filtering and how to detect success:
+
+**Test Runners:**
+- [ ] `jest` - filter where `status === "passed"`
+- [ ] `pytest` - filter where `outcome === "passed"`
+- [ ] `vitest` - filter where `state === "pass"`
+- [ ] `go test` - filter where `action === "pass"`
+- [ ] `cargo test` - filter where `status === "ok"`
+- [ ] `mocha` - filter where `state === "passed"`
+
+**Linters (filter non-errors):**
+- [ ] `eslint` - filter where `severity < 2` (keep only errors)
+- [ ] `golangci-lint` - filter where `severity === "warning"` (optional)
+- [ ] `tsc` - keep all (errors only by default)
+- [ ] `ruff` - keep all (no severity levels)
+
+#### Output Format
+```json
+// Default JSON output (success filter ON):
+// $ structured-cli pytest tests/ --json
+{
+  "tests": [
+    {"name": "test_login_failure", "outcome": "failed", "message": "AssertionError..."},
+    {"name": "test_invalid_input", "outcome": "failed", "message": "ValueError..."}
+  ],
+  "summary": {
+    "total": 48,
+    "passed": 45,
+    "failed": 2,
+    "skipped": 1
+  },
+  "filterStats": {"removed": 46, "kept": 2}
+}
+
+// With --disable-filter=success (full output):
+// $ structured-cli pytest tests/ --json --disable-filter=success
+{
+  "tests": [
+    {"name": "test_login", "outcome": "passed"},
+    {"name": "test_logout", "outcome": "passed"},
+    ... // all 48 tests
+  ],
+  "summary": {"total": 48, "passed": 45, "failed": 2, "skipped": 1}
+}
+```
+
+#### E2E Tests
+- [ ] Success filter enabled by default for test commands
+- [ ] Success filter enabled by default for lint commands
+- [ ] Passing tests are removed, failures preserved
+- [ ] Summary stats added with pass/fail/skip counts
+- [ ] `--disable-filter=success` shows all results
+- [ ] `--disable-filter=all` disables success filter and dedupe
+- [ ] `STRUCTURED_CLI_DISABLE_FILTER=success` env var works
+- [ ] Filter works correctly with empty results (all pass)
+- [ ] Filter works correctly with all failures
+- [ ] Filter chains correctly with dedupe filter
+- [ ] Non-test/lint commands are unaffected
+- [ ] Passthrough mode is unaffected
+
+### Phase 23: Small Output Filter
+Filter that detects terse CLI outputs and returns minimal JSON status instead of verbose structured data.
+
+#### Design Decision: Minimal Status for Terse Outputs
+
+**Problem:** Some CLI commands produce very terse output (e.g., `git status` showing "nothing to commit"). When converted to JSON, the structured output with metadata becomes *larger* than the raw output, resulting in negative token savings. This defeats the purpose of structured output for simple cases.
+
+**Solution:** A "small" filter that detects when raw output is minimal and returns a simplified status response instead of full structured data.
+
+**Detection Criteria:**
+- Raw output is below a threshold (e.g., < 100 characters or < 25 tokens)
+- Output matches known "success/clean" patterns for the parser
+- Parser indicates output represents a "minimal state"
+
+**Applies to:**
+- `git status` - "nothing to commit, working tree clean"
+- `git stash list` - empty output (no stashes)
+- `npm audit` - "found 0 vulnerabilities"
+- `go build` - empty output (successful build)
+- `cargo build` - "Finished" with no warnings
+- Test runners with 0 failures
+- Linters with 0 issues
+
+**Behavior:**
+- Enabled by default in JSON mode
+- Detects terse/minimal outputs using raw token count + pattern matching
+- Returns compact status JSON: `{"status": "clean", "summary": "nothing to commit"}`
+- Preserves full output when content exceeds threshold or contains actionable data
+
+#### Domain Layer
+- [ ] Define `domain/small_filter.go` (SmallOutputConfig, SmallOutputResult types)
+- [ ] Add `IsMinimal() bool` method signature to parser interface (optional)
+- [ ] Define threshold constants (MIN_TOKEN_THRESHOLD = 25)
+
+#### Ports Layer
+- [ ] Extend `ports/filter.go` with SmallOutputFilter interface
+- [ ] Define MinimalPattern type for parser-specific detection
+
+#### Application Layer
+- [ ] Implement `application/small_filter.go`
+- [ ] Token count check: if rawTokens < threshold, check for minimal pattern
+- [ ] Pattern matching for known "clean/empty" outputs per command
+- [ ] Return compact status JSON when filter triggers
+- [ ] Integrate into executor pipeline (before other filters)
+
+#### Parser Integration
+Add minimal output patterns to existing parsers:
+
+**Git:**
+- [ ] `git status` - matches "nothing to commit" or "working tree clean"
+- [ ] `git stash list` - empty output
+- [ ] `git diff` - empty output (no changes)
+
+**Package Managers:**
+- [ ] `npm audit` - matches "found 0 vulnerabilities"
+- [ ] `npm outdated` - empty output (all up to date)
+- [ ] `pip-audit` - matches "No known vulnerabilities"
+
+**Build Tools:**
+- [ ] `go build` - empty output
+- [ ] `cargo build` - matches "Finished" without warnings/errors
+- [ ] `tsc` - empty output (no errors)
+
+**Linters:**
+- [ ] `eslint` - empty output or 0 problems
+- [ ] `golangci-lint` - empty output
+- [ ] `ruff` - empty output
+
+#### CLI Integration
+- [ ] Small filter enabled by default in JSON mode
+- [ ] Add `--disable-filter=small` flag to get full structured output
+- [ ] Add `STRUCTURED_CLI_DISABLE_FILTER=small` environment variable
+- [ ] Combine with other filters: `--disable-filter=small,success,dedupe`
+
+#### Output Format
+```json
+// Default JSON output (small filter ON) for clean git status:
+// $ structured-cli git status --json
+{
+  "status": "clean",
+  "summary": "nothing to commit, working tree clean"
+}
+
+// With --disable-filter=small (full structured output):
+// $ structured-cli git status --json --disable-filter=small
+{
+  "clean": true,
+  "branch": "main",
+  "upstream": "origin/main",
+  "ahead": 0,
+  "behind": 0,
+  "staged": [],
+  "modified": [],
+  "untracked": [],
+  "renamed": [],
+  "deleted": []
+}
+```
+
+#### Tracking Integration
+- [ ] Small filter outputs should show positive token savings in stats
+- [ ] Track filter activation count in stats (`--by-filter` breakdown)
+- [ ] Exclude filtered commands from "negative savings" calculations
+
+#### E2E Tests
+- [ ] Small filter enabled by default for JSON mode
+- [ ] Clean `git status` returns compact status JSON
+- [ ] Empty `git stash list` returns compact status JSON
+- [ ] `npm audit` with 0 vulnerabilities returns compact status
+- [ ] `--disable-filter=small` returns full structured output
+- [ ] `--disable-filter=all` disables small filter
+- [ ] `STRUCTURED_CLI_DISABLE_FILTER=small` env var works
+- [ ] Filter does not trigger when output exceeds threshold
+- [ ] Filter does not trigger when output contains actionable data
+- [ ] Filter chains correctly with success and dedupe filters
+- [ ] Passthrough mode is unaffected
+- [ ] Stats tracking shows improved savings with filter enabled
+
 ---
 
 ## Research Findings
@@ -2182,6 +2528,390 @@ Feature: File Operations Commands
     When I run "structured-cli df -h --json"
     Then the JSON should contain "filesystems" as an array
     And each filesystem should have "device", "size", "used", "available", "usePercent", "mountpoint"
+
+Feature: Usage Tracking System
+  As a user of structured-cli
+  I want to track command usage and token savings
+  So that I can measure the value and optimize my workflow
+
+  Background:
+    Given structured-cli is configured with tracking enabled
+    And the tracking database is at "~/.local/share/structured-cli/tracking.db"
+
+  # Recording Commands
+
+  Scenario: Track successful JSON output command
+    Given I have a git repository
+    When I run "structured-cli git status --json"
+    Then the command should be recorded in the tracking database
+    And the record should contain "command" equal to "git"
+    And the record should contain "subcommands" containing "status"
+    And the record should contain "input_tokens" as a positive integer
+    And the record should contain "output_tokens" as a positive integer
+    And the record should contain "saved_tokens" calculated correctly
+    And the record should contain "savings_pct" between 0 and 100
+    And the record should contain "exec_time_ms" as a positive integer
+    And the record should contain "parser_used" equal to "git-status"
+
+  Scenario: Track passthrough mode (no savings)
+    Given I have a git repository
+    When I run "structured-cli git status" without --json flag
+    Then the command should NOT be recorded in the tracking database
+
+  Scenario: Track unsupported command fallback
+    Given I have a git repository
+    When I run "structured-cli git some-obscure-subcommand --json"
+    Then the command should be recorded in the tracking database
+    And the record should contain "parser_used" equal to "fallback"
+    And the record should contain "savings_pct" near 0
+
+  Scenario: Track parse failure
+    Given a command produces output that cannot be parsed
+    When I run the command with --json flag
+    Then a parse failure should be recorded
+    And the failure record should contain "error_message"
+    And the failure record should contain "fallback_succeeded" as true or false
+
+  Scenario: Token estimation uses chars/4 heuristic
+    Given I have a command that produces 400 characters of raw output
+    And the JSON output is 100 characters
+    When the command is tracked
+    Then "input_tokens" should be approximately 100
+    And "output_tokens" should be approximately 25
+    And "saved_tokens" should be approximately 75
+    And "savings_pct" should be approximately 75
+
+  # Stats Subcommand
+
+  Scenario: Stats summary report
+    Given I have tracked 100 commands over the past week
+    When I run "structured-cli stats"
+    Then the output should show total commands executed
+    And the output should show total tokens saved
+    And the output should show average savings percentage
+    And the output should show top commands by usage
+
+  Scenario: Stats with JSON output
+    Given I have tracked commands
+    When I run "structured-cli stats --json"
+    Then the JSON should contain "total_commands" as an integer
+    And the JSON should contain "total_input_tokens" as an integer
+    And the JSON should contain "total_output_tokens" as an integer
+    And the JSON should contain "total_saved_tokens" as an integer
+    And the JSON should contain "avg_savings_pct" as a float
+    And the JSON should contain "by_command" as an array
+    And the JSON should contain "by_day" as an array
+
+  Scenario: Stats history shows recent commands
+    Given I have tracked 50 commands
+    When I run "structured-cli stats --history"
+    Then the output should show the 20 most recent commands
+    And each entry should show timestamp, command, and savings
+
+  Scenario: Stats history with JSON output
+    Given I have tracked commands
+    When I run "structured-cli stats --history --json"
+    Then the JSON should contain "commands" as an array
+    And each command should have "timestamp", "command", "subcommands", "saved_tokens", "savings_pct"
+
+  Scenario: Stats by parser breakdown
+    Given I have tracked commands using multiple parsers
+    When I run "structured-cli stats --by-parser"
+    Then the output should group stats by parser name
+    And each parser should show count, total savings, average savings
+
+  Scenario: Stats by parser with JSON output
+    Given I have tracked commands using multiple parsers
+    When I run "structured-cli stats --by-parser --json"
+    Then the JSON should contain "by_parser" as an array
+    And each entry should have "parser", "count", "total_saved", "avg_savings_pct"
+
+  Scenario: Stats scoped to current project
+    Given I have tracked commands from multiple projects
+    When I run "structured-cli stats --project" from "/home/user/myproject"
+    Then the output should only show stats for commands run in "/home/user/myproject"
+
+  # Database Management
+
+  Scenario: 90-day automatic cleanup
+    Given I have tracking records older than 90 days
+    When a new command is tracked
+    Then records older than 90 days should be deleted
+    And records within 90 days should be preserved
+
+  Scenario: Database is created on first use
+    Given the tracking database does not exist
+    When I run "structured-cli git status --json"
+    Then the tracking database should be created
+    And the database should have "commands" table
+    And the database should have "parse_failures" table
+
+  Scenario: XDG Base Directory compliance
+    Given XDG_DATA_HOME is set to "/custom/data"
+    When I run "structured-cli git status --json"
+    Then the tracking database should be at "/custom/data/structured-cli/tracking.db"
+
+  Scenario: XDG fallback when not set
+    Given XDG_DATA_HOME is not set
+    When I run "structured-cli git status --json"
+    Then the tracking database should be at "~/.local/share/structured-cli/tracking.db"
+
+  # Disable Tracking
+
+  Scenario: Disable tracking via environment variable
+    Given STRUCTURED_CLI_NO_TRACKING is set to "1"
+    When I run "structured-cli git status --json"
+    Then the command should NOT be recorded in the tracking database
+    And the JSON output should still be produced normally
+
+  Scenario: Disable tracking via config file
+    Given tracking is disabled in config file
+    When I run "structured-cli git status --json"
+    Then the command should NOT be recorded in the tracking database
+
+Feature: Output Deduplication System
+  As an AI coding agent
+  I want to deduplicate repetitive output items
+  So that I consume fewer tokens while retaining essential information
+
+  Background:
+    Given structured-cli is installed
+    And the command produces JSON output with --json flag
+
+  # Default Deduplication (ON by default)
+
+  Scenario: Dedupe is enabled by default in JSON mode
+    Given a linter produces 50 identical "no-unused-vars" errors
+    When I run "structured-cli eslint src/ --json"
+    Then the JSON should contain a single grouped item
+    And the item should have "count" equal to 50
+    And the item should have "sample" equal to "first"
+
+  Scenario: Dedupe collapses identical objects at same level
+    Given eslint produces 10 identical error objects
+      | rule           | file   | line |
+      | no-unused-vars | a.js   | 10   |
+    When I run "structured-cli eslint src/ --json"
+    Then the JSON should contain 1 grouped item
+    And the item should have "count" equal to 10
+
+  Scenario: Dedupe preserves different objects
+    Given eslint produces errors with different content
+      | rule           | file   | line |
+      | no-unused-vars | a.js   | 10   |
+      | no-unused-vars | a.js   | 20   |
+      | semi           | b.js   | 5    |
+    When I run "structured-cli eslint src/ --json"
+    Then the JSON should contain 3 items (all different)
+    And no item should have a "count" field greater than 1
+
+  Scenario: Disable dedupe with --disable-filter flag
+    Given eslint produces 50 errors
+    When I run "structured-cli eslint src/ --json --disable-filter=dedupe"
+    Then the JSON should contain all 50 individual items
+    And no item should have a "count" field
+
+  Scenario: Disable all filters with --disable-filter=all
+    Given eslint produces 50 errors
+    When I run "structured-cli eslint src/ --json --disable-filter=all"
+    Then the JSON should contain all 50 individual items
+    And no filtering or transformation should be applied
+
+  # Dedup Stats
+
+  Scenario: Dedupe adds stats to output by default
+    Given a command produces 100 items that dedupe to 5
+    When I run the command with --json
+    Then the JSON should contain "dedupStats" object
+    And "dedupStats.originalCount" should equal 100
+    And "dedupStats.dedupedCount" should equal 5
+    And "dedupStats.reduction" should equal "95%"
+
+  # Environment Variable
+
+  Scenario: Disable dedupe via environment variable
+    Given STRUCTURED_CLI_DISABLE_FILTER is set to "dedupe"
+    When I run "structured-cli eslint src/ --json"
+    Then deduplication should NOT be applied
+    And all individual items should be present
+
+  # Edge Cases
+
+  Scenario: Dedupe handles empty arrays
+    Given a linter produces no errors
+    When I run "structured-cli eslint src/ --json --dedupe"
+    Then the JSON should contain an empty array
+    And "dedupStats.originalCount" should equal 0
+
+  Scenario: Dedupe handles single item
+    Given a linter produces exactly 1 error
+    When I run "structured-cli eslint src/ --json --dedupe"
+    Then the JSON should contain 1 item
+    And the item should have "count" equal to 1
+
+  Scenario: Dedupe preserves non-array fields
+    Given command output has both arrays and scalar fields
+    When I run the command with --dedupe
+    Then only array fields should be deduplicated
+    And scalar fields should be unchanged
+
+  Scenario: Dedupe handles nested arrays
+    Given output has nested structures with arrays
+    When I run the command with --dedupe
+    Then top-level arrays should be deduplicated
+    And nested arrays within items should be preserved
+
+  # Two-Stage Deduplication
+
+  Scenario: Raw text deduplication before parsing
+    Given a command produces repeated identical lines
+      """
+      ERROR: connection refused
+      ERROR: connection refused
+      ERROR: connection refused
+      """
+    When I run the command with --json
+    Then raw text should be deduplicated before parsing
+    And the output should reflect 1 unique error with count 3
+
+  Scenario: JSON object deduplication at same array level
+    Given parsed output has an array with identical objects
+    When deduplication is applied
+    Then identical objects should be collapsed
+    And "count" field should reflect the number of occurrences
+
+  Scenario: Objects at different levels are not deduplicated
+    Given parsed output has nested arrays
+    And identical objects exist at different nesting levels
+    When deduplication is applied
+    Then objects are only compared within their own array level
+    And cross-level duplicates are preserved
+
+Feature: Success Message Filter
+  As an AI coding agent
+  I want to filter out passing tests and successful lint checks
+  So that I only see actionable failures and save tokens
+
+  Background:
+    Given structured-cli is installed
+    And the command produces JSON output with --json flag
+
+  # Default Behavior (ON by default for test/lint)
+
+  Scenario: Test runner filters passing tests by default
+    Given pytest runs 50 tests with 48 passing and 2 failing
+    When I run "structured-cli pytest tests/ --json"
+    Then the JSON "tests" array should contain only 2 items (failures)
+    And the JSON should contain "summary" with pass/fail counts
+    And "summary.passed" should equal 48
+    And "summary.failed" should equal 2
+
+  Scenario: Linter filters successful checks by default
+    Given eslint checks 100 files with 95 passing and 5 with errors
+    When I run "structured-cli eslint src/ --json"
+    Then the JSON "issues" array should contain only errors
+    And passing files should not appear in output
+
+  Scenario: All tests pass shows empty array with summary
+    Given pytest runs 50 tests with all passing
+    When I run "structured-cli pytest tests/ --json"
+    Then the JSON "tests" array should be empty
+    And "summary.passed" should equal 50
+    And "summary.failed" should equal 0
+
+  # Disable Filter
+
+  Scenario: Disable success filter shows all results
+    Given pytest runs 50 tests with 48 passing and 2 failing
+    When I run "structured-cli pytest tests/ --json --disable-filter=success"
+    Then the JSON "tests" array should contain all 50 items
+    And passing tests should be included
+
+  Scenario: Disable all filters shows unfiltered output
+    Given pytest runs tests with duplicates and passing results
+    When I run "structured-cli pytest tests/ --json --disable-filter=all"
+    Then no filtering should be applied
+    And all results should be present
+
+  Scenario: Disable via environment variable
+    Given STRUCTURED_CLI_DISABLE_FILTER is set to "success"
+    When I run "structured-cli pytest tests/ --json"
+    Then all test results should be included
+    And passing tests should not be filtered
+
+  # Filter Stats
+
+  Scenario: Filter adds stats to output
+    Given pytest runs 50 tests with 48 passing and 2 failing
+    When I run "structured-cli pytest tests/ --json"
+    Then the JSON should contain "filterStats" object
+    And "filterStats.removed" should equal 48
+    And "filterStats.kept" should equal 2
+
+  # Test Runner Specific
+
+  Scenario: Jest filters passing tests
+    Given jest runs tests with mixed results
+    When I run "structured-cli jest --json"
+    Then only tests with "status" not equal to "passed" should appear
+
+  Scenario: Go test filters passing tests
+    Given go test runs with mixed results
+    When I run "structured-cli go test ./... --json"
+    Then only tests with "action" equal to "fail" should appear
+    And package pass events should be summarized
+
+  Scenario: Vitest filters passing tests
+    Given vitest runs tests with mixed results
+    When I run "structured-cli vitest --json"
+    Then only tests with "state" not equal to "pass" should appear
+
+  Scenario: Cargo test filters passing tests
+    Given cargo test runs with mixed results
+    When I run "structured-cli cargo test --json"
+    Then only tests with "status" not equal to "ok" should appear
+
+  # Linter Specific
+
+  Scenario: ESLint keeps only errors by default
+    Given eslint produces warnings and errors
+    When I run "structured-cli eslint src/ --json"
+    Then only items with "severity" equal to 2 (error) should appear
+    And warnings should be counted in summary but not shown
+
+  Scenario: TypeScript compiler keeps all errors
+    Given tsc produces type errors
+    When I run "structured-cli tsc --json"
+    Then all errors should appear (tsc only outputs errors)
+
+  # Filter Chaining
+
+  Scenario: Success filter chains with dedupe filter
+    Given pytest produces duplicate failure messages
+    When I run "structured-cli pytest tests/ --json"
+    Then passing tests should be filtered (success filter)
+    And duplicate failures should be collapsed (dedupe filter)
+    And both filterStats and dedupStats should be present
+
+  Scenario: Disable success but keep dedupe
+    Given pytest produces results with duplicates
+    When I run "structured-cli pytest tests/ --json --disable-filter=success"
+    Then all tests should be present (success filter disabled)
+    And duplicates should still be collapsed (dedupe active)
+
+  # Non-applicable Commands
+
+  Scenario: Non-test commands are unaffected
+    Given git status shows modified files
+    When I run "structured-cli git status --json"
+    Then success filter should not apply
+    And all status information should be present
+
+  Scenario: File operations are unaffected
+    Given ls lists directory contents
+    When I run "structured-cli ls -la --json"
+    Then success filter should not apply
+    And all entries should be present
 ```
 
 ---

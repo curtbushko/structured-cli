@@ -7,10 +7,17 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/curtbushko/structured-cli/internal/domain"
 	"github.com/curtbushko/structured-cli/internal/ports"
 )
+
+// Test constants for common raw output strings.
+const testRawOutputOnBranchMain = "On branch main"
 
 // mockRunner implements ports.CommandRunner for testing.
 type mockRunner struct {
@@ -56,6 +63,28 @@ func (m *mockParser) Matches(_ string, _ []string) bool {
 type mockRegistry struct {
 	parser ports.Parser
 	found  bool
+}
+
+// mockTracker implements ports.TrackingRecorder for testing.
+type mockTracker struct {
+	recordCalled        bool
+	recordFailureCalled bool
+	lastRecord          domain.CommandRecord
+	lastFailure         domain.ParseFailure
+	recordErr           error
+	recordFailureErr    error
+}
+
+func (m *mockTracker) Record(_ context.Context, record domain.CommandRecord) error {
+	m.recordCalled = true
+	m.lastRecord = record
+	return m.recordErr
+}
+
+func (m *mockTracker) RecordFailure(_ context.Context, failure domain.ParseFailure) error {
+	m.recordFailureCalled = true
+	m.lastFailure = failure
+	return m.recordFailureErr
 }
 
 func (m *mockRegistry) Find(_ string, _ []string) (ports.Parser, bool) {
@@ -461,4 +490,305 @@ func TestExecutor_Execute_NonZeroExitCode_SyncsSuccessField(t *testing.T) {
 	if resultData.ExitCode != 1 {
 		t.Errorf("resultData.ExitCode = %d, want 1", resultData.ExitCode)
 	}
+}
+
+func TestExecutor_TracksSuccessfulParse(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := "On branch main\nnothing to commit, working tree clean"
+	expectedData := map[string]any{"branch": "main", "clean": true}
+	expectedSchema := domain.NewSchema("git-status", "Git Status", "object", nil, nil)
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		schema:  expectedSchema,
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert
+	require.NoError(t, err)
+	require.True(t, tracker.recordCalled, "Tracker.Record should be called")
+
+	record := tracker.lastRecord
+	assert.Equal(t, "git", record.Command)
+	assert.Equal(t, []string{"status"}, record.Subcommands)
+	assert.Greater(t, record.RawTokens, 0, "RawTokens should be > 0")
+	assert.Greater(t, record.ParsedTokens, 0, "ParsedTokens should be > 0")
+}
+
+func TestExecutor_MeasuresExecutionTime(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := "On branch main\nnothing to commit"
+	expectedData := map[string]any{"branch": "main"}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert
+	require.NoError(t, err)
+	require.True(t, tracker.recordCalled)
+
+	// Execution time should be non-zero (at least some nanoseconds)
+	assert.Greater(t, tracker.lastRecord.ExecutionTime, time.Duration(0), "ExecutionTime should be > 0")
+}
+
+func TestExecutor_CalculatesTokenSavings(t *testing.T) {
+	// Arrange: Raw output of 400 chars, parsed JSON of 100 chars
+	// Expected: RawTokens=100, ParsedTokens=25, TokensSaved=75
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	// Create raw output that's 400 characters
+	rawOutput := strings.Repeat("a", 400)
+
+	// Create a result with 100 character JSON representation
+	// The parsed data should serialize to about 100 chars
+	expectedData := map[string]any{"branch": "main", "clean": true}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert
+	require.NoError(t, err)
+	require.True(t, tracker.recordCalled)
+
+	record := tracker.lastRecord
+	// Raw is 400 chars / 4 = 100 tokens
+	assert.Equal(t, 100, record.RawTokens, "RawTokens should be 100 (400 chars / 4)")
+
+	// Parsed tokens depend on JSON serialization size
+	assert.Greater(t, record.ParsedTokens, 0)
+
+	// TokensSaved should be positive (raw should be larger than parsed)
+	assert.Greater(t, record.TokensSaved, 0, "TokensSaved should be positive")
+
+	// SavingsPercent should be calculated
+	assert.Greater(t, record.SavingsPercent, 0.0, "SavingsPercent should be > 0")
+}
+
+func TestExecutor_TracksParseFallback(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := "unexpected format output"
+	parseErr := errors.New("parse failed")
+
+	parser := &mockParser{
+		parseErr: parseErr,
+		matches:  true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert - Execute should not return error (error is in result)
+	require.NoError(t, err)
+
+	// RecordFailure should be called for parse failures
+	require.True(t, tracker.recordFailureCalled, "Tracker.RecordFailure should be called")
+
+	failure := tracker.lastFailure
+	assert.Equal(t, "git status", failure.Command)
+	assert.Contains(t, failure.ErrorMessage, "parse failed")
+	// Fallback succeeded because we wrote the error result
+	assert.True(t, failure.FallbackSuccess)
+}
+
+func TestExecutor_RecordsProjectDirectory(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := testRawOutputOnBranchMain
+	expectedData := map[string]any{"branch": "main"}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert
+	require.NoError(t, err)
+	require.True(t, tracker.recordCalled)
+
+	// Project should be non-empty (current working directory)
+	assert.NotEmpty(t, tracker.lastRecord.Project, "Project should be set to current working directory")
+}
+
+func TestExecutor_NilTrackerNoTracking(t *testing.T) {
+	// Arrange - executor with nil tracker (tracking disabled)
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := testRawOutputOnBranchMain
+	expectedData := map[string]any{"branch": "main"}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+
+	// Use the standard NewExecutor (nil tracker)
+	executor := NewExecutor(runner, registry, writer)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert - should succeed without panic
+	require.NoError(t, err)
+	assert.True(t, writer.writeCalled, "Writer should still be called")
+}
+
+func TestExecutor_TrackingErrorDoesNotFailExecution(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	cmd := domain.NewCommand("git", []string{"status"}, nil)
+
+	rawOutput := testRawOutputOnBranchMain
+	expectedData := map[string]any{"branch": "main"}
+
+	parser := &mockParser{
+		result:  domain.NewParseResult(expectedData, rawOutput, 0),
+		matches: true,
+	}
+
+	runner := &mockRunner{
+		stdout:   rawOutput,
+		exitCode: 0,
+	}
+
+	registry := &mockRegistry{
+		parser: parser,
+		found:  true,
+	}
+
+	writer := &mockWriter{}
+	tracker := &mockTracker{
+		recordErr: errors.New("database connection failed"),
+	}
+
+	executor := NewExecutorWithTracker(runner, registry, writer, tracker)
+
+	// Act
+	var buf bytes.Buffer
+	err := executor.Execute(ctx, cmd, &buf)
+
+	// Assert - tracking error should not fail execution
+	require.NoError(t, err)
+	assert.True(t, writer.writeCalled, "Writer should still be called")
 }

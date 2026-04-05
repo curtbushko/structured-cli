@@ -4,10 +4,13 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/curtbushko/structured-cli/internal/domain"
 	"github.com/curtbushko/structured-cli/internal/ports"
@@ -18,19 +21,39 @@ import (
 // - CommandRunner: executes the actual CLI commands
 // - ParserRegistry: finds the appropriate parser for a command
 // - OutputWriter: formats and writes the result
+// - TrackingRecorder: records command execution metrics (optional)
 type Executor struct {
 	runner   ports.CommandRunner
 	registry ports.ParserRegistry
 	writer   ports.OutputWriter
+	tracker  ports.TrackingRecorder
 }
 
 // NewExecutor creates a new Executor with the given dependencies.
 // All dependencies are injected via constructor for testability.
+// Tracking is disabled (nil tracker).
 func NewExecutor(runner ports.CommandRunner, registry ports.ParserRegistry, writer ports.OutputWriter) *Executor {
 	return &Executor{
 		runner:   runner,
 		registry: registry,
 		writer:   writer,
+		tracker:  nil,
+	}
+}
+
+// NewExecutorWithTracker creates a new Executor with tracking support.
+// If tracker is nil, tracking is disabled.
+func NewExecutorWithTracker(
+	runner ports.CommandRunner,
+	registry ports.ParserRegistry,
+	writer ports.OutputWriter,
+	tracker ports.TrackingRecorder,
+) *Executor {
+	return &Executor{
+		runner:   runner,
+		registry: registry,
+		writer:   writer,
+		tracker:  tracker,
 	}
 }
 
@@ -39,12 +62,16 @@ func NewExecutor(runner ports.CommandRunner, registry ports.ParserRegistry, writ
 // Otherwise, it passes through the raw output.
 //
 // The flow is:
-// 1. Run the command via CommandRunner
+// 1. Run the command via CommandRunner (timed)
 // 2. Look up a parser in the registry
 // 3. If parser found: parse output, handle any parse errors
 // 4. If no parser: create passthrough result with raw output
-// 5. Write result via OutputWriter
+// 5. Track the execution (if tracker is configured)
+// 6. Write result via OutputWriter
 func (e *Executor) Execute(ctx context.Context, cmd domain.Command, out io.Writer) error {
+	// Start timing the execution
+	startTime := time.Now()
+
 	// Run the command
 	stdout, _, exitCode, err := e.runner.Run(ctx, cmd.Name, append(cmd.Subcommands, cmd.Args...))
 	if err != nil {
@@ -63,15 +90,16 @@ func (e *Executor) Execute(ctx context.Context, cmd domain.Command, out io.Write
 
 	var result domain.ParseResult
 	var schema domain.Schema
+	var parseErr error
 
 	if found {
 		// Parse the output
 		schema = parser.Schema()
-		result, err = parser.Parse(strings.NewReader(raw))
-		if err != nil {
+		result, parseErr = parser.Parse(strings.NewReader(raw))
+		if parseErr != nil {
 			// Parser failed - create error result with raw output preserved
 			result = domain.NewParseResultWithError(
-				fmt.Errorf("parse error: %w", err),
+				fmt.Errorf("parse error: %w", parseErr),
 				raw,
 				exitCode,
 			)
@@ -90,12 +118,82 @@ func (e *Executor) Execute(ctx context.Context, cmd domain.Command, out io.Write
 		result = domain.NewParseResult(fallbackResult, raw, exitCode)
 	}
 
+	// Calculate execution time
+	execTime := time.Since(startTime)
+
+	// Track the execution (errors are logged but do not fail command execution)
+	e.trackExecution(ctx, cmd, raw, result, execTime, parseErr)
+
 	// Write the result
 	if err := e.writer.Write(out, result, schema); err != nil {
 		return fmt.Errorf("write result: %w", err)
 	}
 
 	return nil
+}
+
+// trackExecution records the command execution metrics if tracking is enabled.
+// Any tracking errors are ignored to avoid failing command execution.
+func (e *Executor) trackExecution(
+	ctx context.Context,
+	cmd domain.Command,
+	raw string,
+	result domain.ParseResult,
+	execTime time.Duration,
+	parseErr error,
+) {
+	if e.tracker == nil {
+		return
+	}
+
+	// If there was a parse error, record it as a failure
+	if parseErr != nil {
+		e.recordParseFailure(ctx, cmd, parseErr)
+		return
+	}
+
+	// Calculate token metrics
+	rawTokens := domain.EstimateTokens(raw)
+	parsedJSON := e.serializeResult(result.Data)
+	parsedTokens := domain.EstimateTokens(parsedJSON)
+
+	// Get current working directory for project context
+	project, _ := os.Getwd()
+
+	// Create and record the command record
+	record := domain.NewCommandRecord(
+		cmd.Name,
+		cmd.Subcommands,
+		rawTokens,
+		parsedTokens,
+		execTime,
+		project,
+	)
+
+	// Record errors are logged but don't fail execution
+	_ = e.tracker.Record(ctx, record)
+}
+
+// recordParseFailure records a parse failure for tracking.
+func (e *Executor) recordParseFailure(ctx context.Context, cmd domain.Command, parseErr error) {
+	// Build full command string
+	cmdParts := append([]string{cmd.Name}, cmd.Subcommands...)
+	fullCmd := strings.Join(cmdParts, " ")
+
+	failure := domain.NewParseFailure(fullCmd, parseErr.Error(), true)
+	_ = e.tracker.RecordFailure(ctx, failure)
+}
+
+// serializeResult converts result data to JSON for token counting.
+func (e *Executor) serializeResult(data any) string {
+	if data == nil {
+		return ""
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return ""
+	}
+	return string(jsonBytes)
 }
 
 // syncExitCodeAndSuccess updates the ExitCode and Success fields in the result data

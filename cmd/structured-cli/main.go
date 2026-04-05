@@ -3,6 +3,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
@@ -18,9 +19,14 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/python"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/test"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
+	"github.com/curtbushko/structured-cli/internal/adapters/tracking"
 	"github.com/curtbushko/structured-cli/internal/application"
 	"github.com/curtbushko/structured-cli/internal/domain"
+	"github.com/curtbushko/structured-cli/internal/ports"
 )
+
+// Environment variable to disable tracking.
+const envNoTracking = "STRUCTURED_CLI_NO_TRACKING"
 
 func main() {
 	os.Exit(run())
@@ -134,10 +140,56 @@ func run() int {
 	registry.Register(fileops.NewDUParser())
 	registry.Register(fileops.NewDFParser())
 
-	// Create CLI handler (inbound adapter)
-	handler := cli.NewHandler(execRunner, registry)
+	// Create tracker (SQLite or NoOp based on environment)
+	tracker := createTracker()
+	defer func() {
+		if err := tracker.Close(); err != nil {
+			log.Printf("warning: failed to close tracker: %v", err)
+		}
+	}()
+
+	// Create small filter with default patterns
+	smallFilter := createSmallFilter()
+
+	// Create CLI handler (inbound adapter) with tracker and small filter
+	handler := cli.NewHandlerWithSmallFilter(execRunner, registry, tracker, smallFilter)
 
 	// Execute the CLI and propagate exit code
 	err := handler.Run()
 	return domain.ExitCode(err)
+}
+
+// createTracker creates the appropriate tracker based on environment configuration.
+// Returns NoOpTracker if STRUCTURED_CLI_NO_TRACKING is set, otherwise SQLiteTracker.
+// Returns nil on SQLite creation errors (tracking disabled silently).
+func createTracker() ports.Tracker {
+	if os.Getenv(envNoTracking) != "" {
+		return tracking.NewNoOpTracker()
+	}
+
+	// Get the default database path using XDG conventions
+	dbPath := tracking.DatabasePath()
+
+	tracker, err := tracking.NewSQLiteTracker(dbPath)
+	if err != nil {
+		// Log warning but don't fail - tracking is optional
+		log.Printf("warning: failed to create tracker: %v", err)
+		return tracking.NewNoOpTracker()
+	}
+
+	return tracker
+}
+
+// createSmallFilter creates a SmallFilter with default patterns for common commands.
+// The filter detects terse output and returns compact JSON status.
+func createSmallFilter() ports.SmallOutputFilter {
+	filter := application.NewSmallFilter()
+
+	// Register default patterns for common commands
+	patterns := application.ToMinimalPatterns(application.DefaultPatterns())
+	for _, p := range patterns {
+		filter.RegisterPattern(p)
+	}
+
+	return filter
 }

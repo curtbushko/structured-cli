@@ -3,6 +3,7 @@ package features
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,8 +13,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
+	_ "modernc.org/sqlite" // SQLite driver for tracking database checks
 )
 
 // binaryPath holds the path to the built binary, set once at test start
@@ -50,15 +53,17 @@ func buildBinary() (string, error) {
 
 // testContext holds state across scenario steps
 type testContext struct {
-	tempDir      string
-	repoDir      string
-	output       string
-	exitCode     int
-	envVars      map[string]string
-	binaryPath   string
-	emptyRepoDir string
-	testFile     string
-	nonGitDir    string
+	tempDir        string
+	repoDir        string
+	output         string
+	exitCode       int
+	envVars        map[string]string
+	binaryPath     string
+	emptyRepoDir   string
+	testFile       string
+	nonGitDir      string
+	trackingDBPath string // Path to the tracking database for E2E tests
+	trackingDir    string // Temp directory for XDG_DATA_HOME
 }
 
 func newTestContext() *testContext {
@@ -679,6 +684,188 @@ func (tc *testContext) theJSONArrayShouldHaveAtLeastNItems(_ context.Context, ke
 	return nil
 }
 
+// Tracking-specific step definitions
+
+func (tc *testContext) iHaveACleanTrackingDatabase(_ context.Context) error {
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	// Create a temporary directory for XDG_DATA_HOME
+	tc.trackingDir, err = os.MkdirTemp("", "structured-cli-tracking-*")
+	if err != nil {
+		return err
+	}
+
+	// Set XDG_DATA_HOME to isolate tracking database
+	tc.envVars["XDG_DATA_HOME"] = tc.trackingDir
+
+	// Set the expected tracking database path
+	tc.trackingDBPath = filepath.Join(tc.trackingDir, "structured-cli", "tracking.db")
+
+	return nil
+}
+
+func (tc *testContext) iHaveATrackingDatabaseWithNRecordedCommands(ctx context.Context, n int) error {
+	if err := tc.iHaveACleanTrackingDatabase(ctx); err != nil {
+		return err
+	}
+
+	// Also need a git repository to run commands against
+	if err := tc.iHaveAGitRepository(ctx); err != nil {
+		return err
+	}
+
+	// Reset envVars to preserve the XDG_DATA_HOME we set
+	xdgDataHome := tc.trackingDir
+	tc.envVars["XDG_DATA_HOME"] = xdgDataHome
+
+	// Run n commands to populate the database
+	for i := 0; i < n; i++ {
+		if err := tc.iRun(ctx, "structured-cli --json git status"); err != nil {
+			return fmt.Errorf("failed to run command %d: %w", i+1, err)
+		}
+	}
+
+	return nil
+}
+
+func (tc *testContext) iHaveATrackingDatabaseWithOldRecords(ctx context.Context, daysAgo int) error {
+	if err := tc.iHaveACleanTrackingDatabase(ctx); err != nil {
+		return err
+	}
+
+	// Also need a git repository
+	if err := tc.iHaveAGitRepository(ctx); err != nil {
+		return err
+	}
+
+	// Reset envVars to preserve the XDG_DATA_HOME we set
+	xdgDataHome := tc.trackingDir
+	tc.envVars["XDG_DATA_HOME"] = xdgDataHome
+
+	// Run a few commands to create the database
+	for i := 0; i < 3; i++ {
+		if err := tc.iRun(ctx, "structured-cli --json git status"); err != nil {
+			return fmt.Errorf("failed to run command %d: %w", i+1, err)
+		}
+	}
+
+	// Update the timestamps to be old (simulate old records)
+	db, err := sql.Open("sqlite", tc.trackingDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to open tracking database: %w", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	oldTime := time.Now().AddDate(0, 0, -daysAgo)
+	_, err = db.ExecContext(ctx, "UPDATE commands SET timestamp = ?", oldTime)
+	if err != nil {
+		return fmt.Errorf("failed to update timestamps: %w", err)
+	}
+
+	return nil
+}
+
+func (tc *testContext) iRunInTheTrackingContext(ctx context.Context, command string) error {
+	// Run a command that will trigger cleanup of old records
+	return tc.iRun(ctx, command)
+}
+
+func (tc *testContext) theTrackingDatabaseShouldHaveNCommandRecorded(ctx context.Context, n int) error {
+	// Wait briefly for any async writes
+	time.Sleep(100 * time.Millisecond)
+
+	db, err := sql.Open("sqlite", tc.trackingDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to open tracking database: %w", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	var count int
+	err = db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to count commands: %w", err)
+	}
+
+	if count != n {
+		return fmt.Errorf("expected %d commands recorded, got %d", n, count)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theTrackingDatabaseShouldHaveTokenMetricsRecorded(ctx context.Context) error {
+	// Wait briefly for any async writes
+	time.Sleep(100 * time.Millisecond)
+
+	db, err := sql.Open("sqlite", tc.trackingDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to open tracking database: %w", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	var count int
+	var rawTokens, parsedTokens int
+	err = db.QueryRowContext(ctx,
+		"SELECT COUNT(*), COALESCE(SUM(raw_tokens), 0), COALESCE(SUM(parsed_tokens), 0) FROM commands",
+	).Scan(&count, &rawTokens, &parsedTokens)
+	if err != nil {
+		return fmt.Errorf("failed to get token metrics: %w", err)
+	}
+
+	if count == 0 {
+		return errors.New("no commands recorded in tracking database")
+	}
+
+	// Verify that token counts are recorded (they should be positive for any command)
+	if rawTokens == 0 && parsedTokens == 0 {
+		return errors.New("no token metrics recorded (both raw and parsed are 0)")
+	}
+
+	return nil
+}
+
+func (tc *testContext) theOldRecordsShouldBeRemoved(ctx context.Context) error {
+	// Wait briefly for any async writes
+	time.Sleep(100 * time.Millisecond)
+
+	db, err := sql.Open("sqlite", tc.trackingDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to open tracking database: %w", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	// Check if any records are older than 90 days
+	cutoff := time.Now().AddDate(0, 0, -90)
+	var oldCount int
+	err = db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands WHERE timestamp < ?", cutoff).Scan(&oldCount)
+	if err != nil {
+		return fmt.Errorf("failed to count old commands: %w", err)
+	}
+
+	if oldCount > 0 {
+		return fmt.Errorf("expected old records to be removed, but found %d", oldCount)
+	}
+
+	return nil
+}
+
+func (tc *testContext) noTrackingDatabaseShouldBeCreated(_ context.Context) error {
+	// Wait briefly for any async writes
+	time.Sleep(100 * time.Millisecond)
+
+	// Check that the tracking database file does not exist
+	if _, err := os.Stat(tc.trackingDBPath); err == nil {
+		return fmt.Errorf("tracking database was created at %s when it should not have been", tc.trackingDBPath)
+	}
+
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	tc := newTestContext()
 
@@ -727,6 +914,20 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the first file should have "([^"]*)" as a string$`, tc.theFirstFileShouldHaveAsAString)
 	ctx.Step(`^one branch should have "current" equal to true$`, tc.oneBranchShouldHaveCurrentEqualToTrue)
 
+	// Given steps - Tracking
+	ctx.Step(`^I have a clean tracking database$`, tc.iHaveACleanTrackingDatabase)
+	ctx.Step(`^I have a tracking database with (\d+) recorded commands$`, tc.iHaveATrackingDatabaseWithNRecordedCommands)
+	ctx.Step(`^I have a tracking database with old records from (\d+) days ago$`, tc.iHaveATrackingDatabaseWithOldRecords)
+
+	// When steps - Tracking
+	ctx.Step(`^I run "([^"]*)" in the tracking context$`, tc.iRunInTheTrackingContext)
+
+	// Then steps - Tracking
+	ctx.Step(`^the tracking database should have (\d+) command recorded$`, tc.theTrackingDatabaseShouldHaveNCommandRecorded)
+	ctx.Step(`^the tracking database should have token metrics recorded$`, tc.theTrackingDatabaseShouldHaveTokenMetricsRecorded)
+	ctx.Step(`^the old records should be removed$`, tc.theOldRecordsShouldBeRemoved)
+	ctx.Step(`^no tracking database should be created$`, tc.noTrackingDatabaseShouldBeCreated)
+
 	// Cleanup after each scenario
 	ctx.After(func(ctx context.Context, _ *godog.Scenario, _ error) (context.Context, error) {
 		// Clean up test files
@@ -745,6 +946,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		}
 		if tc.testFile != "" {
 			os.Remove(tc.testFile)
+		}
+		// Clean up tracking directory
+		if tc.trackingDir != "" {
+			os.RemoveAll(tc.trackingDir)
 		}
 		return ctx, nil
 	})
