@@ -7,7 +7,7 @@ Feature: Unsupported Commands
     Given I have a git repository
 
   Scenario: Unsupported subcommand in JSON mode returns fallback
-    When I run "structured-cli git stash list --json"
+    When I run "structured-cli --json --disable-filter=small git stash list"
     Then the output should be valid JSON
     And the JSON should contain key "raw"
     And the JSON should contain key "parsed" with boolean value false

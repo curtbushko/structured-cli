@@ -5,14 +5,14 @@ Feature: Make and Just Commands
 
   Scenario: make - successful target
     Given I have a Makefile with target "test"
-    When I run "structured-cli make test --json"
+    When I run "structured-cli --json --disable-filter=small make test"
     Then the output should be valid JSON
     And the JSON should contain key "success"
     And the JSON should contain key "exit_code"
 
   Scenario: make - target failure
     Given I have a Makefile with failing target "broken"
-    When I run "structured-cli make broken --json"
+    When I run "structured-cli --json --disable-filter=small make broken"
     Then the output should be valid JSON
     And the JSON should contain key "success" with boolean value false
     And the JSON should contain key "exit_code"
@@ -24,19 +24,19 @@ Feature: Make and Just Commands
 
   Scenario: just - successful recipe
     Given I have a justfile with recipe "build"
-    When I run "structured-cli just build --json"
+    When I run "structured-cli --json --disable-filter=small just build"
     Then the output should be valid JSON
     And the JSON should contain key "success"
     And the JSON should contain key "exit_code"
 
   Scenario: just - recipe failure
     Given I have a justfile with failing recipe "broken"
-    When I run "structured-cli just broken --json"
+    When I run "structured-cli --json --disable-filter=small just broken"
     Then the output should be valid JSON
     And the JSON should contain key "success" with boolean value false
 
   Scenario: just - list recipes
     Given I have a justfile with recipe "build"
-    When I run "structured-cli just --list --json"
+    When I run "structured-cli --json --disable-filter=small just --list"
     Then the output should be valid JSON
     And the JSON should contain key "recipes" as an array

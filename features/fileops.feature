@@ -84,14 +84,14 @@ Feature: File Operations
 
   Scenario: du - disk usage
     Given I have a directory with files
-    When I run "structured-cli du -sh . --json"
+    When I run "structured-cli --json --disable-filter=small du -sh ."
     Then the exit code should be 0
     And the output should be valid JSON
     And the JSON should contain key "entries" as an array
 
   Scenario: df - disk free
     Given I have a directory with files
-    When I run "structured-cli df -h . --json"
+    When I run "structured-cli --json --disable-filter=small df -h ."
     Then the exit code should be 0
     And the output should be valid JSON
     And the JSON should contain key "filesystems" as an array
