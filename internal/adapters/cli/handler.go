@@ -22,12 +22,13 @@ import (
 // Handler manages CLI interactions using cobra.
 // It coordinates between user input, command execution, and output formatting.
 type Handler struct {
-	runner       ports.CommandRunner
-	registry     ports.ParserRegistry
-	tracker      ports.Tracker
-	smallFilter  ports.SmallOutputFilter
-	deduplicator ports.Deduplicator
-	rootCmd      *cobra.Command
+	runner        ports.CommandRunner
+	registry      ports.ParserRegistry
+	tracker       ports.Tracker
+	smallFilter   ports.SmallOutputFilter
+	deduplicator  ports.Deduplicator
+	successFilter ports.SuccessFilter
+	rootCmd       *cobra.Command
 }
 
 // NewHandler creates a new CLI Handler with the given dependencies.
@@ -94,6 +95,29 @@ func NewHandlerWithDeduplicator(
 		tracker:      tracker,
 		smallFilter:  smallFilter,
 		deduplicator: deduplicator,
+	}
+	h.rootCmd = h.buildRootCommand()
+	return h
+}
+
+// NewHandlerWithSuccessFilter creates a new CLI Handler with success filter support.
+// The success filter removes passing/successful items from test/lint output.
+// If successFilter is nil, success filtering is disabled.
+func NewHandlerWithSuccessFilter(
+	runner ports.CommandRunner,
+	registry ports.ParserRegistry,
+	tracker ports.Tracker,
+	smallFilter ports.SmallOutputFilter,
+	deduplicator ports.Deduplicator,
+	successFilter ports.SuccessFilter,
+) *Handler {
+	h := &Handler{
+		runner:        runner,
+		registry:      registry,
+		tracker:       tracker,
+		smallFilter:   smallFilter,
+		deduplicator:  deduplicator,
+		successFilter: successFilter,
 	}
 	h.rootCmd = h.buildRootCommand()
 	return h
@@ -261,6 +285,7 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 
 	// Determine if filters should be disabled
 	smallFilterDisabled := ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter)
+	successFilterDisabled := ShouldDisableFilter(FilterNameSuccess, disableFilters, envDisableFilter)
 	dedupDisabled := ShouldDisableFilter(FilterNameDedupe, disableFilters, envDisableFilter)
 
 	// Parse args into Command
@@ -316,11 +341,14 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 		return h.writeSmallFilterResult(out, smallResult)
 	}
 
+	// Apply success filter if enabled and in JSON mode (before dedup)
+	successStats := h.applySuccessFilter(outputJSON, successFilterDisabled, parseErr, exitCode, cmd, &result)
+
 	// Apply deduplication if enabled and in JSON mode
 	dedupStats := h.applyDeduplication(outputJSON, dedupDisabled, parseErr, exitCode, &result)
 
 	// Write output based on mode
-	if err := h.writeOutputWithDedup(out, outputJSON, result, schema, dedupStats); err != nil {
+	if err := h.writeOutputWithStats(out, outputJSON, result, schema, successStats, dedupStats); err != nil {
 		return err
 	}
 
@@ -380,6 +408,39 @@ func (h *Handler) applyDeduplication(
 
 	// Only include stats if there was actual reduction
 	if stats.OriginalCount > 0 && stats.OriginalCount != stats.DedupedCount {
+		return &stats
+	}
+
+	return nil
+}
+
+// applySuccessFilter applies success filtering to the result data if conditions are met.
+// Returns success filter stats if there was a reduction, or nil otherwise.
+func (h *Handler) applySuccessFilter(
+	outputJSON, disabled bool,
+	parseErr error,
+	exitCode int,
+	cmd domain.Command,
+	result *domain.ParseResult,
+) *domain.SuccessFilterResult {
+	if !outputJSON || disabled || h.successFilter == nil || parseErr != nil || exitCode != 0 {
+		return nil
+	}
+
+	if result.Data == nil {
+		return nil
+	}
+
+	// Check if this command type should be filtered
+	if !h.successFilter.ShouldFilter(cmd.Name, cmd.Subcommands) {
+		return nil
+	}
+
+	filteredData, stats := h.successFilter.Filter(result.Data)
+	result.Data = filteredData
+
+	// Only include stats if there was actual reduction
+	if stats.Total > 0 && stats.Removed > 0 {
 		return &stats
 	}
 
@@ -454,16 +515,17 @@ func (h *Handler) handleError(out io.Writer, outputJSON bool, err error, exitCod
 	return err
 }
 
-// writeOutputWithDedup writes the result with optional dedup stats.
-func (h *Handler) writeOutputWithDedup(
+// writeOutputWithStats writes the result with optional success filter and dedup stats.
+func (h *Handler) writeOutputWithStats(
 	out io.Writer,
 	outputJSON bool,
 	result domain.ParseResult,
 	_ domain.Schema,
+	successStats *domain.SuccessFilterResult,
 	dedupStats *domain.DedupResult,
 ) error {
 	if outputJSON {
-		return h.writeJSONWithDedup(out, result, dedupStats)
+		return h.writeJSONWithStats(out, result, successStats, dedupStats)
 	}
 	return h.writePassthrough(out, result)
 }
@@ -493,18 +555,19 @@ func (h *Handler) writeJSON(out io.Writer, result domain.ParseResult) error {
 	return enc.Encode(output)
 }
 
-// writeJSONWithDedup writes the result as JSON with optional dedup stats.
-func (h *Handler) writeJSONWithDedup(
+// writeJSONWithStats writes the result as JSON with optional success filter and dedup stats.
+func (h *Handler) writeJSONWithStats(
 	out io.Writer,
 	result domain.ParseResult,
+	successStats *domain.SuccessFilterResult,
 	dedupStats *domain.DedupResult,
 ) error {
-	// If no dedup stats, use regular writeJSON to avoid wrapping structs
-	if dedupStats == nil {
+	// If no stats at all, use regular writeJSON to avoid wrapping structs
+	if successStats == nil && dedupStats == nil {
 		return h.writeJSON(out, result)
 	}
 
-	// When we have dedup stats, we need to convert to map to add the stats field
+	// When we have stats, we need to convert to map to add the stats fields
 	var output map[string]any
 
 	if result.Error != nil {
@@ -514,7 +577,7 @@ func (h *Handler) writeJSONWithDedup(
 			"raw":      result.Raw,
 		}
 	} else if result.Data != nil {
-		// Convert struct to map to add dedupStats
+		// Convert struct to map to add stats
 		output = h.dataToMap(result.Data)
 	} else {
 		// Unparsed output - passthrough with wrapper
@@ -525,8 +588,15 @@ func (h *Handler) writeJSONWithDedup(
 		}
 	}
 
-	// Add dedupStats
-	output["dedupStats"] = dedupStats
+	// Add successFilterStats if present
+	if successStats != nil {
+		output["successFilterStats"] = successStats
+	}
+
+	// Add dedupStats if present
+	if dedupStats != nil {
+		output["dedupStats"] = dedupStats
+	}
 
 	enc := json.NewEncoder(out)
 	return enc.Encode(output)

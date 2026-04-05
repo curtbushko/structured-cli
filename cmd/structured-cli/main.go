@@ -154,8 +154,11 @@ func run() int {
 	// Create deduplicator for collapsing duplicate items in output
 	deduper := application.NewDeduper()
 
-	// Create CLI handler (inbound adapter) with tracker, small filter, and deduplicator
-	handler := cli.NewHandlerWithDeduplicator(execRunner, registry, tracker, smallFilter, deduper)
+	// Create success filter for removing passing tests from output
+	successFilter := application.NewSuccessFilterer()
+
+	// Create CLI handler (inbound adapter) with tracker, small filter, deduplicator, and success filter
+	handler := cli.NewHandlerWithSuccessFilter(execRunner, registry, tracker, smallFilter, deduper, successFilter)
 
 	// Execute the CLI and propagate exit code
 	err := handler.Run()
