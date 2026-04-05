@@ -36,6 +36,10 @@ type CommandRecord struct {
 
 	// Project is the project/directory context where the command was run.
 	Project string
+
+	// FiltersApplied is the list of filter names that were applied to this command.
+	// Empty if no filters were applied (e.g., "small", "success", "dedupe").
+	FiltersApplied []string
 }
 
 // NewCommandRecord creates a new CommandRecord with computed token savings.
@@ -47,10 +51,29 @@ func NewCommandRecord(
 	execTime time.Duration,
 	project string,
 ) CommandRecord {
+	return NewCommandRecordWithFilters(command, subcommands, rawTokens, parsedTokens, execTime, project, nil)
+}
+
+// NewCommandRecordWithFilters creates a new CommandRecord with computed token savings
+// and the list of filters that were applied to this command.
+func NewCommandRecordWithFilters(
+	command string,
+	subcommands []string,
+	rawTokens int,
+	parsedTokens int,
+	execTime time.Duration,
+	project string,
+	filters []string,
+) CommandRecord {
 	tokensSaved := rawTokens - parsedTokens
 	var savingsPercent float64
 	if rawTokens > 0 {
 		savingsPercent = float64(tokensSaved) / float64(rawTokens) * 100
+	}
+
+	// Ensure filters is an empty slice, not nil, for consistent serialization
+	if filters == nil {
+		filters = []string{}
 	}
 
 	return CommandRecord{
@@ -63,6 +86,7 @@ func NewCommandRecord(
 		ExecutionTime:  execTime,
 		Timestamp:      time.Now(),
 		Project:        project,
+		FiltersApplied: filters,
 	}
 }
 

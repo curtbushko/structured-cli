@@ -18,9 +18,11 @@ type mockTrackingReader struct {
 	summary       domain.StatsSummary
 	history       []domain.CommandRecord
 	byParser      []domain.CommandStats
+	byFilter      []domain.FilterStats
 	statsErr      error
 	historyErr    error
 	byParserErr   error
+	byFilterErr   error
 	lastStatsOpts ports.StatsOptions
 	lastLimit     int
 }
@@ -37,6 +39,10 @@ func (m *mockTrackingReader) History(_ context.Context, limit int) ([]domain.Com
 
 func (m *mockTrackingReader) StatsByParser(_ context.Context) ([]domain.CommandStats, error) {
 	return m.byParser, m.byParserErr
+}
+
+func (m *mockTrackingReader) StatsByFilter(_ context.Context) ([]domain.FilterStats, error) {
+	return m.byFilter, m.byFilterErr
 }
 
 func TestStatsCommand_Summary(t *testing.T) {

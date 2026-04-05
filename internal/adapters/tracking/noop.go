@@ -42,6 +42,11 @@ func (t *NoOpTracker) StatsByParser(_ context.Context) ([]domain.CommandStats, e
 	return nil, nil
 }
 
+// StatsByFilter returns an empty slice.
+func (t *NoOpTracker) StatsByFilter(_ context.Context) ([]domain.FilterStats, error) {
+	return nil, nil
+}
+
 // Cleanup does nothing and returns nil.
 func (t *NoOpTracker) Cleanup(_ context.Context, _ time.Duration) error {
 	return nil

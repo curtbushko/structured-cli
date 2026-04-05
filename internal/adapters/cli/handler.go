@@ -333,19 +333,36 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 	// Calculate execution time
 	execTime := time.Since(startTime)
 
-	// Track the execution (errors are logged but do not fail command execution)
-	h.trackExecution(ctx, cmd, raw, result, execTime, parseErr)
+	// Track which filters were applied
+	var filtersApplied []string
 
 	// Apply small filter if enabled and in JSON mode
 	if smallResult, ok := h.applySmallFilter(outputJSON, smallFilterDisabled, raw, parseErr, exitCode, cmd); ok {
+		// Track execution with small filter applied
+		filtersApplied = append(filtersApplied, FilterNameSmall)
+		smallJSON, _ := json.Marshal(smallResult)
+		parsedTokens := domain.EstimateTokens(string(smallJSON))
+		h.trackExecutionWithFilters(ctx, cmd, raw, parsedTokens, execTime, parseErr, filtersApplied)
 		return h.writeSmallFilterResult(out, smallResult)
 	}
 
 	// Apply success filter if enabled and in JSON mode (before dedup)
 	successStats := h.applySuccessFilter(outputJSON, successFilterDisabled, parseErr, exitCode, cmd, &result)
+	if successStats != nil {
+		filtersApplied = append(filtersApplied, FilterNameSuccess)
+	}
 
 	// Apply deduplication if enabled and in JSON mode
 	dedupStats := h.applyDeduplication(outputJSON, dedupDisabled, parseErr, exitCode, &result)
+	if dedupStats != nil {
+		filtersApplied = append(filtersApplied, FilterNameDedupe)
+	}
+
+	// Track the execution after all filters applied
+	// Compute parsed tokens from the actual result data after filters
+	parsedJSON := h.serializeResult(result.Data)
+	parsedTokens := domain.EstimateTokens(parsedJSON)
+	h.trackExecutionWithFilters(ctx, cmd, raw, parsedTokens, execTime, parseErr, filtersApplied)
 
 	// Write output based on mode
 	if err := h.writeOutputWithStats(out, outputJSON, result, schema, successStats, dedupStats); err != nil {
@@ -669,15 +686,17 @@ func syncExitCodeAndSuccess(data any, exitCode int) {
 	}
 }
 
-// trackExecution records the command execution metrics if tracking is enabled.
+// trackExecutionWithFilters records the command execution metrics with filter info.
 // Any tracking errors are ignored to avoid failing command execution.
-func (h *Handler) trackExecution(
+// The parsedTokens is the token count of the final JSON output (after filters).
+func (h *Handler) trackExecutionWithFilters(
 	ctx context.Context,
 	cmd domain.Command,
 	raw string,
-	result domain.ParseResult,
+	parsedTokens int,
 	execTime time.Duration,
 	parseErr error,
+	filters []string,
 ) {
 	if h.tracker == nil {
 		return
@@ -691,20 +710,19 @@ func (h *Handler) trackExecution(
 
 	// Calculate token metrics
 	rawTokens := domain.EstimateTokens(raw)
-	parsedJSON := h.serializeResult(result.Data)
-	parsedTokens := domain.EstimateTokens(parsedJSON)
 
 	// Get current working directory for project context
 	project, _ := os.Getwd()
 
-	// Create and record the command record
-	record := domain.NewCommandRecord(
+	// Create and record the command record with filters
+	record := domain.NewCommandRecordWithFilters(
 		cmd.Name,
 		cmd.Subcommands,
 		rawTokens,
 		parsedTokens,
 		execTime,
 		project,
+		filters,
 	)
 
 	// Record errors are logged but don't fail execution

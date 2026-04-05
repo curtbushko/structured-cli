@@ -32,8 +32,13 @@ CREATE TABLE IF NOT EXISTS commands (
 	savings_percent REAL NOT NULL,
 	execution_time_ns INTEGER NOT NULL,
 	timestamp DATETIME NOT NULL,
-	project TEXT NOT NULL
+	project TEXT NOT NULL,
+	filters_applied TEXT NOT NULL DEFAULT ''
 )`
+
+// Migration to add filters_applied column to existing databases.
+const addFiltersColumnSQL = `
+ALTER TABLE commands ADD COLUMN filters_applied TEXT NOT NULL DEFAULT ''`
 
 const createParseFailuresTableSQL = `
 CREATE TABLE IF NOT EXISTS parse_failures (
@@ -48,8 +53,8 @@ CREATE TABLE IF NOT EXISTS parse_failures (
 const insertCommandSQL = `
 INSERT INTO commands (
 	command, subcommands, raw_tokens, parsed_tokens, tokens_saved,
-	savings_percent, execution_time_ns, timestamp, project
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	savings_percent, execution_time_ns, timestamp, project, filters_applied
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 const insertParseFailureSQL = `
 INSERT INTO parse_failures (command, error_message, fallback_success, timestamp)
@@ -60,12 +65,13 @@ SELECT
 	COUNT(*) as total_commands,
 	COALESCE(SUM(tokens_saved), 0) as total_tokens_saved,
 	COALESCE(AVG(savings_percent), 0) as avg_savings_percent,
-	COALESCE(SUM(execution_time_ns), 0) as total_execution_time_ns
+	COALESCE(SUM(execution_time_ns), 0) as total_execution_time_ns,
+	COALESCE(SUM(CASE WHEN filters_applied != '' THEN 1 ELSE 0 END), 0) as filtered_count
 FROM commands`
 
 const selectHistorySQL = `
 SELECT id, command, subcommands, raw_tokens, parsed_tokens, tokens_saved,
-       savings_percent, execution_time_ns, timestamp, project
+       savings_percent, execution_time_ns, timestamp, project, filters_applied
 FROM commands
 ORDER BY timestamp DESC
 LIMIT ?`
@@ -83,6 +89,35 @@ ORDER BY invocation_count DESC`
 const cleanupCommandsSQL = `DELETE FROM commands WHERE timestamp < ?`
 
 const cleanupParseFailuresSQL = `DELETE FROM parse_failures WHERE timestamp < ?`
+
+// selectStatsByFilterSQL returns per-filter statistics.
+// It uses a WITH clause to split comma-separated filter names and aggregate.
+const selectStatsByFilterSQL = `
+WITH RECURSIVE split_filters AS (
+	SELECT
+		id,
+		tokens_saved,
+		TRIM(SUBSTR(filters_applied || ',', 1, INSTR(filters_applied || ',', ',') - 1)) AS filter_name,
+		SUBSTR(filters_applied || ',', INSTR(filters_applied || ',', ',') + 1) AS remaining
+	FROM commands
+	WHERE filters_applied != ''
+	UNION ALL
+	SELECT
+		id,
+		tokens_saved,
+		TRIM(SUBSTR(remaining, 1, INSTR(remaining, ',') - 1)) AS filter_name,
+		SUBSTR(remaining, INSTR(remaining, ',') + 1) AS remaining
+	FROM split_filters
+	WHERE remaining != ''
+)
+SELECT
+	filter_name,
+	COUNT(*) as activation_count,
+	COALESCE(SUM(tokens_saved), 0) as total_tokens_saved
+FROM split_filters
+WHERE filter_name != ''
+GROUP BY filter_name
+ORDER BY activation_count DESC`
 
 // SQLiteTracker implements the Tracker interface using SQLite.
 type SQLiteTracker struct {
@@ -125,6 +160,9 @@ func NewSQLiteTrackerWithContext(ctx context.Context, path string) (*SQLiteTrack
 		return nil, err
 	}
 
+	// Run migration to add filters_applied column (ignore error if column exists)
+	_, _ = db.ExecContext(ctx, addFiltersColumnSQL)
+
 	return &SQLiteTracker{db: db}, nil
 }
 
@@ -134,6 +172,7 @@ func (t *SQLiteTracker) Record(ctx context.Context, record domain.CommandRecord)
 	_ = t.Cleanup(ctx, defaultRetention)
 
 	subcommands := strings.Join(record.Subcommands, ",")
+	filtersApplied := strings.Join(record.FiltersApplied, ",")
 	_, err := t.db.ExecContext(ctx, insertCommandSQL,
 		record.Command,
 		subcommands,
@@ -144,6 +183,7 @@ func (t *SQLiteTracker) Record(ctx context.Context, record domain.CommandRecord)
 		record.ExecutionTime.Nanoseconds(),
 		record.Timestamp,
 		record.Project,
+		filtersApplied,
 	)
 	return err
 }
@@ -186,22 +226,25 @@ func (t *SQLiteTracker) Stats(ctx context.Context, opts ports.StatsOptions) (dom
 	var totalTokensSaved int
 	var avgSavingsPercent float64
 	var totalExecTimeNs int64
+	var filteredCount int
 
 	err := t.db.QueryRowContext(ctx, query, args...).Scan(
 		&totalCommands,
 		&totalTokensSaved,
 		&avgSavingsPercent,
 		&totalExecTimeNs,
+		&filteredCount,
 	)
 	if err != nil {
 		return domain.StatsSummary{}, err
 	}
 
-	return domain.NewStatsSummary(
+	return domain.NewStatsSummaryWithFiltered(
 		totalCommands,
 		totalTokensSaved,
 		avgSavingsPercent,
 		time.Duration(totalExecTimeNs),
+		filteredCount,
 	), nil
 }
 
@@ -220,7 +263,7 @@ func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.Comman
 	var records []domain.CommandRecord
 	for rows.Next() {
 		var id int64
-		var command, subcommandsStr, project string
+		var command, subcommandsStr, project, filtersAppliedStr string
 		var rawTokens, parsedTokens, tokensSaved int
 		var savingsPercent float64
 		var execTimeNs int64
@@ -229,6 +272,7 @@ func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.Comman
 		if err := rows.Scan(
 			&id, &command, &subcommandsStr, &rawTokens, &parsedTokens,
 			&tokensSaved, &savingsPercent, &execTimeNs, &timestamp, &project,
+			&filtersAppliedStr,
 		); err != nil {
 			return nil, err
 		}
@@ -236,6 +280,11 @@ func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.Comman
 		var subcommands []string
 		if subcommandsStr != "" {
 			subcommands = strings.Split(subcommandsStr, ",")
+		}
+
+		var filtersApplied []string
+		if filtersAppliedStr != "" {
+			filtersApplied = strings.Split(filtersAppliedStr, ",")
 		}
 
 		records = append(records, domain.CommandRecord{
@@ -249,6 +298,7 @@ func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.Comman
 			ExecutionTime:  time.Duration(execTimeNs),
 			Timestamp:      timestamp,
 			Project:        project,
+			FiltersApplied: filtersApplied,
 		})
 	}
 
@@ -278,6 +328,33 @@ func (t *SQLiteTracker) StatsByParser(ctx context.Context) ([]domain.CommandStat
 			invocationCount,
 			totalTokensSaved,
 			time.Duration(avgExecTimeNs),
+		))
+	}
+
+	return stats, rows.Err()
+}
+
+// StatsByFilter returns per-filter statistics.
+func (t *SQLiteTracker) StatsByFilter(ctx context.Context) ([]domain.FilterStats, error) {
+	rows, err := t.db.QueryContext(ctx, selectStatsByFilterSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var stats []domain.FilterStats
+	for rows.Next() {
+		var filterName string
+		var activationCount, totalTokensSaved int
+
+		if err := rows.Scan(&filterName, &activationCount, &totalTokensSaved); err != nil {
+			return nil, err
+		}
+
+		stats = append(stats, domain.NewFilterStats(
+			filterName,
+			activationCount,
+			totalTokensSaved,
 		))
 	}
 

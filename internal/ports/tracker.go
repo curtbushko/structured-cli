@@ -49,6 +49,10 @@ type TrackingReader interface {
 	// StatsByParser returns per-parser statistics showing which parsers are most used.
 	// Results are typically ordered by invocation count descending.
 	StatsByParser(ctx context.Context) ([]domain.CommandStats, error)
+
+	// StatsByFilter returns per-filter statistics showing which filters are most used.
+	// Results are typically ordered by activation count descending.
+	StatsByFilter(ctx context.Context) ([]domain.FilterStats, error)
 }
 
 // TrackingMaintainer provides maintenance operations for the tracking system.

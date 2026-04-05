@@ -18,8 +18,9 @@ import (
 // statsFlags holds the flag values for the stats command.
 type statsFlags struct {
 	json     bool
-	history  int // 0 = disabled, >0 = limit
+	history  int  // 0 = disabled, >0 = limit
 	byParser bool
+	byFilter bool
 	project  bool // if true, filter to current working directory
 }
 
@@ -29,6 +30,7 @@ type statsJSONSummary struct {
 	TotalTokensSaved   int     `json:"total_tokens_saved"`
 	AvgSavingsPercent  float64 `json:"avg_savings_percent"`
 	TotalExecutionTime string  `json:"total_execution_time"`
+	FilteredCount      int     `json:"filtered_count"`
 }
 
 // statsJSONHistoryItem is the JSON output format for a history item.
@@ -46,6 +48,13 @@ type statsJSONParserItem struct {
 	InvocationCount  int    `json:"invocation_count"`
 	TotalTokensSaved int    `json:"total_tokens_saved"`
 	AvgExecutionTime string `json:"avg_execution_time"`
+}
+
+// statsJSONFilterItem is the JSON output format for per-filter stats.
+type statsJSONFilterItem struct {
+	FilterName       string `json:"filter_name"`
+	ActivationCount  int    `json:"activation_count"`
+	TotalTokensSaved int    `json:"total_tokens_saved"`
 }
 
 // buildStatsCommand creates the stats subcommand for the CLI.
@@ -73,6 +82,7 @@ Use flags to customize the output.`,
 	// Set NoOptDefVal so --history without argument defaults to 10
 	cmd.Flags().Lookup("history").NoOptDefVal = "10"
 	cmd.Flags().BoolVar(&flags.byParser, "by-parser", false, "Show statistics grouped by parser")
+	cmd.Flags().BoolVar(&flags.byFilter, "by-filter", false, "Show statistics grouped by filter")
 	cmd.Flags().BoolVar(&flags.project, "project", false, "Filter to current working directory")
 
 	return cmd
@@ -88,6 +98,11 @@ func executeStatsCommand(ctx context.Context, reader ports.TrackingReader, flags
 	// Handle by-parser output
 	if flags.byParser {
 		return executeByParserStats(ctx, reader, flags, out)
+	}
+
+	// Handle by-filter output
+	if flags.byFilter {
+		return executeByFilterStats(ctx, reader, flags, out)
 	}
 
 	// Default: summary stats
@@ -126,6 +141,7 @@ func writeSummaryJSON(out io.Writer, summary domain.StatsSummary) error {
 		TotalTokensSaved:   summary.TotalTokensSaved,
 		AvgSavingsPercent:  summary.AvgSavingsPercent,
 		TotalExecutionTime: summary.TotalExecutionTime.String(),
+		FilteredCount:      summary.FilteredCount,
 	}
 
 	enc := json.NewEncoder(out)
@@ -143,6 +159,10 @@ func writeSummaryText(out io.Writer, summary domain.StatsSummary) error {
 		return err
 	}
 	_, err = fmt.Fprintf(out, "Total Commands:      %d\n", summary.TotalCommands)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(out, "Filtered Commands:   %d\n", summary.FilteredCount)
 	if err != nil {
 		return err
 	}
@@ -288,6 +308,72 @@ func writeByParserText(out io.Writer, stats []domain.CommandStats) error {
 	for _, stat := range stats {
 		_, err = fmt.Fprintf(out, "%-25s %10d %15d %15s\n",
 			stat.ParserName, stat.InvocationCount, stat.TotalTokensSaved, stat.AvgExecutionTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// executeByFilterStats outputs the per-filter statistics.
+func executeByFilterStats(ctx context.Context, reader ports.TrackingReader, flags statsFlags, out io.Writer) error {
+	stats, err := reader.StatsByFilter(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get filter stats: %w", err)
+	}
+
+	if flags.json {
+		return writeByFilterJSON(out, stats)
+	}
+
+	return writeByFilterText(out, stats)
+}
+
+// writeByFilterJSON writes the per-filter stats as JSON.
+func writeByFilterJSON(out io.Writer, stats []domain.FilterStats) error {
+	items := make([]statsJSONFilterItem, 0, len(stats))
+	for _, stat := range stats {
+		items = append(items, statsJSONFilterItem{
+			FilterName:       stat.FilterName,
+			ActivationCount:  stat.ActivationCount,
+			TotalTokensSaved: stat.TotalTokensSaved,
+		})
+	}
+
+	enc := json.NewEncoder(out)
+	return enc.Encode(items)
+}
+
+// writeByFilterText writes the per-filter stats as formatted text.
+func writeByFilterText(out io.Writer, stats []domain.FilterStats) error {
+	if len(stats) == 0 {
+		_, err := fmt.Fprintln(out, "No filter statistics found.")
+		return err
+	}
+
+	_, err := fmt.Fprintf(out, "Statistics by Filter\n")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(out, "====================\n\n")
+	if err != nil {
+		return err
+	}
+
+	// Header
+	_, err = fmt.Fprintf(out, "%-15s %10s %15s\n", "FILTER", "COUNT", "TOKENS SAVED")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(out, "%s\n", strings.Repeat("-", 45))
+	if err != nil {
+		return err
+	}
+
+	for _, stat := range stats {
+		_, err = fmt.Fprintf(out, "%-15s %10d %15d\n",
+			stat.FilterName, stat.ActivationCount, stat.TotalTokensSaved)
 		if err != nil {
 			return err
 		}

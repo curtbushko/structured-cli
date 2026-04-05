@@ -390,6 +390,10 @@ func (m *mockTracker) StatsByParser(_ context.Context) ([]domain.CommandStats, e
 	return nil, nil
 }
 
+func (m *mockTracker) StatsByFilter(_ context.Context) ([]domain.FilterStats, error) {
+	return nil, nil
+}
+
 func (m *mockTracker) Cleanup(_ context.Context, _ time.Duration) error {
 	return nil
 }

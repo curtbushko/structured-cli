@@ -17,6 +17,9 @@ type StatsSummary struct {
 
 	// TotalExecutionTime is the cumulative execution time.
 	TotalExecutionTime time.Duration
+
+	// FilteredCount is the number of commands that had filters applied.
+	FilteredCount int
 }
 
 // NewStatsSummary creates a new StatsSummary with the given values.
@@ -31,6 +34,24 @@ func NewStatsSummary(
 		TotalTokensSaved:   totalTokensSaved,
 		AvgSavingsPercent:  avgSavingsPercent,
 		TotalExecutionTime: totalExecTime,
+		FilteredCount:      0,
+	}
+}
+
+// NewStatsSummaryWithFiltered creates a new StatsSummary with filtered count.
+func NewStatsSummaryWithFiltered(
+	totalCommands int,
+	totalTokensSaved int,
+	avgSavingsPercent float64,
+	totalExecTime time.Duration,
+	filteredCount int,
+) StatsSummary {
+	return StatsSummary{
+		TotalCommands:      totalCommands,
+		TotalTokensSaved:   totalTokensSaved,
+		AvgSavingsPercent:  avgSavingsPercent,
+		TotalExecutionTime: totalExecTime,
+		FilteredCount:      filteredCount,
 	}
 }
 
@@ -61,5 +82,30 @@ func NewCommandStats(
 		InvocationCount:  invocationCount,
 		TotalTokensSaved: totalTokensSaved,
 		AvgExecutionTime: avgExecTime,
+	}
+}
+
+// FilterStats represents statistics for a specific filter type.
+type FilterStats struct {
+	// FilterName identifies the filter (e.g., "small", "success", "dedupe").
+	FilterName string
+
+	// ActivationCount is how many times this filter was applied.
+	ActivationCount int
+
+	// TotalTokensSaved is cumulative tokens saved when this filter was active.
+	TotalTokensSaved int
+}
+
+// NewFilterStats creates a new FilterStats with the given values.
+func NewFilterStats(
+	filterName string,
+	activationCount int,
+	totalTokensSaved int,
+) FilterStats {
+	return FilterStats{
+		FilterName:       filterName,
+		ActivationCount:  activationCount,
+		TotalTokensSaved: totalTokensSaved,
 	}
 }
