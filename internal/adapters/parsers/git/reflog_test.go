@@ -8,9 +8,9 @@ import (
 )
 
 func TestReflogParser_BasicReflog(t *testing.T) {
-	input := `abc1234 HEAD@{0} commit: Add new feature
-def5678 HEAD@{1} checkout: moving from main to feature
-a1b2c34 HEAD@{2} commit: Initial commit
+	input := `abc1234 HEAD@{0}: commit: Add new feature
+def5678 HEAD@{1}: checkout: moving from main to feature
+a1b2c34 HEAD@{2}: commit: Initial commit
 `
 	parser := git.NewReflogParser()
 	result, err := parser.Parse(strings.NewReader(input))
@@ -54,11 +54,11 @@ a1b2c34 HEAD@{2} commit: Initial commit
 }
 
 func TestReflogParser_VariousActions(t *testing.T) {
-	input := `abc1234 HEAD@{0} commit: Latest commit
-def5678 HEAD@{1} merge feature: Merge branch 'feature'
-a1b2c34 HEAD@{2} rebase -i (finish): rebasing main
-c5d6e78 HEAD@{3} reset: moving to HEAD~1
-f9e8d70 HEAD@{4} pull: Fast-forward
+	input := `abc1234 HEAD@{0}: commit: Latest commit
+def5678 HEAD@{1}: merge feature: Merge branch 'feature'
+a1b2c34 HEAD@{2}: rebase -i (finish): rebasing main
+c5d6e78 HEAD@{3}: reset: moving to HEAD~1
+f9e8d70 HEAD@{4}: pull: Fast-forward
 `
 	parser := git.NewReflogParser()
 	result, err := parser.Parse(strings.NewReader(input))
@@ -112,7 +112,7 @@ func TestReflogParser_EmptyReflog(t *testing.T) {
 }
 
 func TestReflogParser_LongHash(t *testing.T) {
-	input := `abc123def456789012345678901234567890abcd HEAD@{0} commit: Test
+	input := `abc123def456789012345678901234567890abcd HEAD@{0}: commit: Test
 `
 	parser := git.NewReflogParser()
 	result, err := parser.Parse(strings.NewReader(input))

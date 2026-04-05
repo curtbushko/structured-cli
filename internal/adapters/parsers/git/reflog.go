@@ -53,8 +53,8 @@ func NewReflogParser() *ReflogParser {
 			},
 			[]string{"entries"},
 		),
-		// Match: <hash> HEAD@{<index>} <action>: <message>
-		entryRe: regexp.MustCompile(`^([a-f0-9]+)\s+HEAD@\{(\d+)\}\s+([^:]+):\s*(.*)$`),
+		// Match: <hash> HEAD@{<index>}: <action>: <message>
+		entryRe: regexp.MustCompile(`^([a-f0-9]+)\s+HEAD@\{(\d+)\}:\s+([^:]+):\s*(.*)$`),
 	}
 }
 

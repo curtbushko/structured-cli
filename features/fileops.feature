@@ -11,6 +11,13 @@ Feature: File Operations
     And the JSON should contain key "entries" as an array
     And the JSON "entries" array should not be empty
 
+  Scenario: ls - list specific path
+    Given I have a directory with files
+    When I run "structured-cli ls -la subdir --json"
+    Then the exit code should be 0
+    And the output should be valid JSON
+    And the JSON should contain key "entries" as an array
+
   Scenario: ls - passthrough mode
     Given I have a directory with files
     When I run "structured-cli ls"
@@ -54,12 +61,26 @@ Feature: File Operations
     Then the output should be valid JSON
     And the JSON should contain key "files" as an array
 
+  Scenario: find - search by type
+    Given I have a directory with files
+    When I run "structured-cli find . -type f --json"
+    Then the output should be valid JSON
+    And the JSON should contain key "files" as an array
+
   Scenario: grep - search in files
     Given I have a file "test.txt" with content "Hello World"
     When I run "structured-cli grep Hello test.txt --json"
     Then the exit code should be 0
     And the output should be valid JSON
     And the JSON should contain key "matches" as an array
+
+  Scenario: grep - pattern matching with line numbers
+    Given I have a file "test.txt" with multiple lines
+    When I run "structured-cli grep -n Line test.txt --json"
+    Then the exit code should be 0
+    And the output should be valid JSON
+    And the JSON should contain key "matches" as an array
+    And the JSON should contain key "count"
 
   Scenario: du - disk usage
     Given I have a directory with files

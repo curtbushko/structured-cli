@@ -364,6 +364,165 @@ func (tc *testContext) iHaveAJustfileWithFailingRecipe(_ context.Context, recipe
 	return os.WriteFile(filepath.Join(tc.tempDir, "justfile"), []byte(justfileContent), 0o644)
 }
 
+func (tc *testContext) iHaveAGoProject(_ context.Context) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-go-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	// Create go.mod
+	goModContent := `module testproject
+
+go 1.21
+`
+	if err := os.WriteFile(filepath.Join(tc.tempDir, "go.mod"), []byte(goModContent), 0o644); err != nil {
+		return err
+	}
+
+	// Create a valid main.go
+	mainGoContent := `package main
+
+func main() {
+	println("hello")
+}
+`
+	return os.WriteFile(filepath.Join(tc.tempDir, "main.go"), []byte(mainGoContent), 0o644)
+}
+
+func (tc *testContext) theGoProjectHasASyntaxError(_ context.Context) error {
+	// Overwrite main.go with syntax error
+	brokenMainContent := `package main
+
+func main() {
+	println("missing quote)
+}
+`
+	return os.WriteFile(filepath.Join(tc.repoDir, "main.go"), []byte(brokenMainContent), 0o644)
+}
+
+func (tc *testContext) theGoProjectHasTests(_ context.Context) error {
+	// Create a simple test file
+	testContent := `package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	result := 1 + 1
+	if result != 2 {
+		t.Errorf("expected 2, got %d", result)
+	}
+}
+`
+	return os.WriteFile(filepath.Join(tc.repoDir, "main_test.go"), []byte(testContent), 0o644)
+}
+
+func (tc *testContext) theGoProjectHasVetIssues(_ context.Context) error {
+	// Create code with a vet issue (unreachable code)
+	vetIssueContent := `package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("%s", 123) // Printf format mismatch: %s expects string, got int
+}
+`
+	return os.WriteFile(filepath.Join(tc.repoDir, "main.go"), []byte(vetIssueContent), 0o644)
+}
+
+func (tc *testContext) theGoProjectHasFormatIssues(_ context.Context) error {
+	// Create code with formatting issues (wrong indentation)
+	badFormatContent := `package main
+
+func main() {
+println("hello")
+}
+`
+	return os.WriteFile(filepath.Join(tc.repoDir, "main.go"), []byte(badFormatContent), 0o644)
+}
+
+// Docker step definitions
+
+func (tc *testContext) dockerIsAvailable(ctx context.Context) error {
+	// Get the pre-built binary path
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	// Create a temp directory for running commands
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-docker-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	// Check if docker is available and daemon is running
+	cmd := exec.CommandContext(ctx, "docker", "info")
+	if err := cmd.Run(); err != nil {
+		return godog.ErrPending // Skip test if docker not available
+	}
+
+	return nil
+}
+
+// Node.js project step definitions
+
+func (tc *testContext) iHaveANodejsProject(_ context.Context) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-npm-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	// Create package.json with a minimal valid structure
+	packageJSON := `{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "Test project for npm E2E tests",
+  "main": "index.js",
+  "dependencies": {}
+}
+`
+	return os.WriteFile(filepath.Join(tc.tempDir, "package.json"), []byte(packageJSON), 0o644)
+}
+
+func (tc *testContext) iHaveANodejsProjectWithNoDependencies(_ context.Context) error {
+	binaryPath, err := buildBinary()
+	if err != nil {
+		return err
+	}
+	tc.binaryPath = binaryPath
+
+	tc.tempDir, err = os.MkdirTemp("", "structured-cli-npm-empty-*")
+	if err != nil {
+		return err
+	}
+	tc.repoDir = tc.tempDir
+
+	// Create package.json with no dependencies
+	packageJSON := `{
+  "name": "empty-project",
+  "version": "1.0.0",
+  "description": "Empty test project"
+}
+`
+	return os.WriteFile(filepath.Join(tc.tempDir, "package.json"), []byte(packageJSON), 0o644)
+}
+
 func (tc *testContext) theEnvironmentVariableIsSetTo(_ context.Context, name, value string) error {
 	tc.envVars[name] = value
 	return nil
@@ -481,6 +640,29 @@ func (tc *testContext) theJSONShouldContainKeyAsAString(_ context.Context, key s
 	return nil
 }
 
+func (tc *testContext) theJSONStringShouldNotBeEmpty(_ context.Context, key string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	val, ok := data[key]
+	if !ok {
+		return fmt.Errorf("JSON does not contain key %q\nJSON: %s", key, tc.output)
+	}
+
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("key %q is not a string, got %T", key, val)
+	}
+
+	if str == "" {
+		return fmt.Errorf("string %q is empty", key)
+	}
+
+	return nil
+}
+
 func (tc *testContext) theJSONShouldContainKeyAsAnArray(_ context.Context, key string) error {
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
@@ -492,6 +674,10 @@ func (tc *testContext) theJSONShouldContainKeyAsAnArray(_ context.Context, key s
 		return fmt.Errorf("JSON does not contain key %q\nJSON: %s", key, tc.output)
 	}
 
+	// Accept both array and null (null is a valid "empty" array in JSON from Go nil slices)
+	if val == nil {
+		return nil // null is acceptable as an empty array
+	}
 	if _, ok := val.([]interface{}); !ok {
 		return fmt.Errorf("key %q is not an array, got %T", key, val)
 	}
@@ -556,7 +742,17 @@ func (tc *testContext) theJSONArrayShouldBeEmpty(_ context.Context, key string) 
 		return fmt.Errorf("failed to parse JSON: %w", err)
 	}
 
-	arr, ok := data[key].([]interface{})
+	val, ok := data[key]
+	if !ok {
+		return fmt.Errorf("key %q not found in JSON", key)
+	}
+
+	// Accept null as empty
+	if val == nil {
+		return nil
+	}
+
+	arr, ok := val.([]interface{})
 	if !ok {
 		return fmt.Errorf("key %q is not an array", key)
 	}
@@ -866,6 +1062,154 @@ func (tc *testContext) noTrackingDatabaseShouldBeCreated(_ context.Context) erro
 	return nil
 }
 
+func (tc *testContext) theJSONObjectShouldHaveAsAString(_ context.Context, objKey, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	obj, ok := data[objKey].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("key %q is not an object\nJSON: %s", objKey, tc.output)
+	}
+
+	val, ok := obj[field]
+	if !ok {
+		return fmt.Errorf("object %q does not have field %q", objKey, field)
+	}
+
+	if _, ok := val.(string); !ok {
+		return fmt.Errorf("field %q in object %q is not a string, got %T", field, objKey, val)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theJSONObjectShouldHaveAsAnArray(_ context.Context, objKey, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	obj, ok := data[objKey].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("key %q is not an object\nJSON: %s", objKey, tc.output)
+	}
+
+	val, ok := obj[field]
+	if !ok {
+		return fmt.Errorf("object %q does not have field %q", objKey, field)
+	}
+
+	if _, ok := val.([]interface{}); !ok {
+		return fmt.Errorf("field %q in object %q is not an array, got %T", field, objKey, val)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theFirstBlameLineShouldHaveAsAString(_ context.Context, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	lines, ok := data["lines"].([]interface{})
+	if !ok || len(lines) == 0 {
+		return errors.New("no lines found in JSON")
+	}
+
+	firstLine, ok := lines[0].(map[string]interface{})
+	if !ok {
+		return errors.New("first line is not an object")
+	}
+
+	val, ok := firstLine[field]
+	if !ok {
+		return fmt.Errorf("first blame line does not have field %q", field)
+	}
+
+	if _, ok := val.(string); !ok {
+		return fmt.Errorf("field %q is not a string, got %T", field, val)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theFirstBlameLineShouldHave(_ context.Context, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	lines, ok := data["lines"].([]interface{})
+	if !ok || len(lines) == 0 {
+		return errors.New("no lines found in JSON")
+	}
+
+	firstLine, ok := lines[0].(map[string]interface{})
+	if !ok {
+		return errors.New("first line is not an object")
+	}
+
+	if _, ok := firstLine[field]; !ok {
+		return fmt.Errorf("first blame line does not have field %q", field)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theFirstReflogEntryShouldHaveAsAString(_ context.Context, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	entries, ok := data["entries"].([]interface{})
+	if !ok || len(entries) == 0 {
+		return errors.New("no entries found in JSON")
+	}
+
+	firstEntry, ok := entries[0].(map[string]interface{})
+	if !ok {
+		return errors.New("first entry is not an object")
+	}
+
+	val, ok := firstEntry[field]
+	if !ok {
+		return fmt.Errorf("first reflog entry does not have field %q", field)
+	}
+
+	if _, ok := val.(string); !ok {
+		return fmt.Errorf("field %q is not a string, got %T", field, val)
+	}
+
+	return nil
+}
+
+func (tc *testContext) theFirstReflogEntryShouldHave(_ context.Context, field string) error {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(tc.output), &data); err != nil {
+		return fmt.Errorf("failed to parse JSON: %w", err)
+	}
+
+	entries, ok := data["entries"].([]interface{})
+	if !ok || len(entries) == 0 {
+		return errors.New("no entries found in JSON")
+	}
+
+	firstEntry, ok := entries[0].(map[string]interface{})
+	if !ok {
+		return errors.New("first entry is not an object")
+	}
+
+	if _, ok := firstEntry[field]; !ok {
+		return fmt.Errorf("first reflog entry does not have field %q", field)
+	}
+
+	return nil
+}
+
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	tc := newTestContext()
 
@@ -893,6 +1237,20 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I have a justfile with recipe "([^"]*)"$`, tc.iHaveAJustfileWithRecipe)
 	ctx.Step(`^I have a justfile with failing recipe "([^"]*)"$`, tc.iHaveAJustfileWithFailingRecipe)
 
+	// Given steps - Go
+	ctx.Step(`^I have a Go project$`, tc.iHaveAGoProject)
+	ctx.Step(`^the Go project has a syntax error$`, tc.theGoProjectHasASyntaxError)
+	ctx.Step(`^the Go project has tests$`, tc.theGoProjectHasTests)
+	ctx.Step(`^the Go project has vet issues$`, tc.theGoProjectHasVetIssues)
+	ctx.Step(`^the Go project has format issues$`, tc.theGoProjectHasFormatIssues)
+
+	// Given steps - Node.js/NPM
+	ctx.Step(`^I have a Node\.js project$`, tc.iHaveANodejsProject)
+	ctx.Step(`^I have a Node\.js project with no dependencies$`, tc.iHaveANodejsProjectWithNoDependencies)
+
+	// Given steps - Docker
+	ctx.Step(`^docker is available$`, tc.dockerIsAvailable)
+
 	// When steps
 	ctx.Step(`^I run "([^"]*)"$`, tc.iRun)
 
@@ -903,6 +1261,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the output should contain "([^"]*)"$`, tc.theOutputShouldContain)
 	ctx.Step(`^the JSON should contain key "([^"]*)" with boolean value (true|false)$`, tc.theJSONShouldContainKeyWithBooleanValue)
 	ctx.Step(`^the JSON should contain key "([^"]*)" as a string$`, tc.theJSONShouldContainKeyAsAString)
+	ctx.Step(`^the JSON "([^"]*)" string should not be empty$`, tc.theJSONStringShouldNotBeEmpty)
 	ctx.Step(`^the JSON should contain key "([^"]*)" as an array$`, tc.theJSONShouldContainKeyAsAnArray)
 	ctx.Step(`^the JSON should contain key "([^"]*)"$`, tc.theJSONShouldContainKey)
 	ctx.Step(`^the JSON "([^"]*)" array should contain "([^"]*)"$`, tc.theJSONArrayShouldContain)
@@ -913,6 +1272,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^the first commit should have "([^"]*)" as a string$`, tc.theFirstCommitShouldHaveAsAString)
 	ctx.Step(`^the first file should have "([^"]*)" as a string$`, tc.theFirstFileShouldHaveAsAString)
 	ctx.Step(`^one branch should have "current" equal to true$`, tc.oneBranchShouldHaveCurrentEqualToTrue)
+	ctx.Step(`^the JSON "([^"]*)" object should have "([^"]*)" as a string$`, tc.theJSONObjectShouldHaveAsAString)
+	ctx.Step(`^the JSON "([^"]*)" object should have "([^"]*)" as an array$`, tc.theJSONObjectShouldHaveAsAnArray)
+	ctx.Step(`^the first blame line should have "([^"]*)" as a string$`, tc.theFirstBlameLineShouldHaveAsAString)
+	ctx.Step(`^the first blame line should have "([^"]*)"$`, tc.theFirstBlameLineShouldHave)
+	ctx.Step(`^the first reflog entry should have "([^"]*)" as a string$`, tc.theFirstReflogEntryShouldHaveAsAString)
+	ctx.Step(`^the first reflog entry should have "([^"]*)"$`, tc.theFirstReflogEntryShouldHave)
 
 	// Given steps - Tracking
 	ctx.Step(`^I have a clean tracking database$`, tc.iHaveACleanTrackingDatabase)
