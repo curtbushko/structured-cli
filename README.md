@@ -4,8 +4,8 @@ A universal CLI wrapper that transforms raw CLI output into structured JSON. Bui
 
 ## Features
 
-- **81 Parsers** - Support for git, npm, docker, cargo, go, python, and more
-- **71 JSON Schemas** - Documented, validated output formats
+- **102 Parsers** - Support for git, npm, docker, cargo, go, python, gh, kubectl, helm, and more
+- **92 JSON Schemas** - Documented, validated output formats
 - **Drop-in Replacement** - Use as an alias without breaking existing workflows
 - **Token Efficient** - Up to 95% reduction in tokens vs raw output
 - **Exit Code Propagation** - Preserves underlying command exit codes
@@ -201,6 +201,39 @@ git status --json
 | `wc` | Word/line/byte counts |
 | `du` | Disk usage |
 | `df` | Filesystem info |
+
+### GitHub CLI (8 commands)
+| Command | Description |
+|---------|-------------|
+| `gh pr list` | Pull request listing |
+| `gh pr view` | PR details with reviews, checks |
+| `gh pr status` | PR status for current branch |
+| `gh issue list` | Issue listing with labels |
+| `gh issue view` | Issue details with comments |
+| `gh repo view` | Repository metadata |
+| `gh run list` | Workflow runs with status |
+| `gh run view` | Workflow run details |
+
+### Kubernetes (8 commands)
+| Command | Description |
+|---------|-------------|
+| `kubectl get pods` | Pod listing with status |
+| `kubectl get services` | Service listing |
+| `kubectl get deployments` | Deployment listing |
+| `kubectl get nodes` | Node listing |
+| `kubectl describe pod` | Pod details with events |
+| `kubectl logs` | Container logs |
+| `kubectl top pods` | Pod resource metrics |
+| `kubectl top nodes` | Node resource metrics |
+
+### Helm (5 commands)
+| Command | Description |
+|---------|-------------|
+| `helm list` | Release listing |
+| `helm status` | Release status with resources |
+| `helm history` | Release history |
+| `helm search repo` | Chart search results |
+| `helm show values` | Chart default values |
 
 ## Output Filters
 
