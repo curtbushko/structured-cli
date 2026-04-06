@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-top-nodes.json",
+  "title": "Kubectl Top Nodes Output",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "description": "List of node metrics",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Node name" },
+          "cpu": { "type": "string", "description": "Raw CPU usage (e.g., 500m, 2)" },
+          "cpu_cores": { "type": "number", "description": "CPU usage in cores" },
+          "cpu_percent": { "type": "integer", "description": "CPU usage percentage" },
+          "memory": { "type": "string", "description": "Raw memory usage (e.g., 4096Mi, 16Gi)" },
+          "memory_bytes": { "type": "integer", "description": "Memory usage in bytes" },
+          "memory_percent": { "type": "integer", "description": "Memory usage percentage" }
+        },
+        "required": ["name", "cpu", "cpu_cores", "cpu_percent", "memory", "memory_bytes", "memory_percent"]
+      }
+    }
+  },
+  "required": ["nodes"]
+}

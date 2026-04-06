@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-describe-pod.json",
+  "title": "Kubectl Describe Pod Output",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Pod name" },
+    "namespace": { "type": "string", "description": "Pod namespace" },
+    "node": { "type": "string", "description": "Node the pod is running on" },
+    "start_time": { "type": "string", "description": "Pod start time" },
+    "labels": {
+      "type": "object",
+      "description": "Pod labels",
+      "additionalProperties": { "type": "string" }
+    },
+    "status": { "type": "string", "description": "Pod status (e.g., Running, Pending)" },
+    "ip": { "type": "string", "description": "Pod IP address" },
+    "containers": {
+      "type": "array",
+      "description": "List of containers in the pod",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Container name" },
+          "image": { "type": "string", "description": "Container image" },
+          "state": { "type": "string", "description": "Container state (Running, Waiting, Terminated)" },
+          "ready": { "type": "boolean", "description": "Whether the container is ready" },
+          "restart_count": { "type": "integer", "description": "Number of container restarts" },
+          "limits": {
+            "type": "object",
+            "description": "Resource limits",
+            "additionalProperties": { "type": "string" }
+          },
+          "requests": {
+            "type": "object",
+            "description": "Resource requests",
+            "additionalProperties": { "type": "string" }
+          }
+        },
+        "required": ["name", "image", "state", "ready", "restart_count"]
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "description": "List of pod conditions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "description": "Condition type (e.g., Ready, Initialized)" },
+          "status": { "type": "string", "description": "Condition status (True, False, Unknown)" }
+        },
+        "required": ["type", "status"]
+      }
+    },
+    "events": {
+      "type": "array",
+      "description": "List of events related to the pod",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "description": "Event type (Normal, Warning)" },
+          "reason": { "type": "string", "description": "Event reason" },
+          "age": { "type": "string", "description": "Event age" },
+          "from": { "type": "string", "description": "Source of the event" },
+          "message": { "type": "string", "description": "Event message" }
+        },
+        "required": ["type", "reason", "age", "from", "message"]
+      }
+    }
+  },
+  "required": ["name", "namespace", "status"]
+}

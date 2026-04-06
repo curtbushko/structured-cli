@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-get-services.json",
+  "title": "Kubectl Get Services Output",
+  "type": "object",
+  "properties": {
+    "services": {
+      "type": "array",
+      "description": "List of services",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Service name" },
+          "namespace": { "type": "string", "description": "Service namespace" },
+          "type": {
+            "type": "string",
+            "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"],
+            "description": "Service type"
+          },
+          "cluster_ip": { "type": "string", "description": "Cluster-internal IP address" },
+          "external_ip": { "type": "string", "description": "External IP address (for LoadBalancer services)" },
+          "ports": {
+            "type": "array",
+            "description": "List of exposed ports",
+            "items": {
+              "type": "object",
+              "properties": {
+                "port": { "type": "integer", "description": "Service port number" },
+                "node_port": { "type": "integer", "description": "Node port number (for NodePort and LoadBalancer)" },
+                "protocol": { "type": "string", "description": "Protocol (TCP, UDP, SCTP)" }
+              },
+              "required": ["port", "protocol"]
+            }
+          },
+          "age": { "type": "string", "description": "Service age (e.g., 5d, 10m, 1h)" }
+        },
+        "required": ["name", "type", "cluster_ip", "ports", "age"]
+      }
+    }
+  },
+  "required": ["services"]
+}

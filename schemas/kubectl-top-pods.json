@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-top-pods.json",
+  "title": "Kubectl Top Pods Output",
+  "type": "object",
+  "properties": {
+    "pods": {
+      "type": "array",
+      "description": "List of pod metrics",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Pod name" },
+          "namespace": { "type": "string", "description": "Pod namespace" },
+          "cpu": { "type": "string", "description": "Raw CPU usage (e.g., 100m, 2)" },
+          "cpu_cores": { "type": "number", "description": "CPU usage in cores" },
+          "memory": { "type": "string", "description": "Raw memory usage (e.g., 256Mi, 1Gi)" },
+          "memory_bytes": { "type": "integer", "description": "Memory usage in bytes" },
+          "containers": {
+            "type": "array",
+            "description": "Container-level metrics (when --containers flag is used)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Container name" },
+                "cpu": { "type": "string", "description": "Raw CPU usage" },
+                "cpu_cores": { "type": "number", "description": "CPU usage in cores" },
+                "memory": { "type": "string", "description": "Raw memory usage" },
+                "memory_bytes": { "type": "integer", "description": "Memory usage in bytes" }
+              },
+              "required": ["name", "cpu", "cpu_cores", "memory", "memory_bytes"]
+            }
+          }
+        },
+        "required": ["name", "cpu", "cpu_cores", "memory", "memory_bytes"]
+      }
+    }
+  },
+  "required": ["pods"]
+}

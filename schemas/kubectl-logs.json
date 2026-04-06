@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-logs.json",
+  "title": "Kubectl Logs Output",
+  "type": "object",
+  "properties": {
+    "container": { "type": "string", "description": "Container name (when specified with -c flag)" },
+    "lines": {
+      "type": "array",
+      "description": "List of log lines",
+      "items": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string", "description": "Log timestamp (when --timestamps is used)" },
+          "level": { "type": "string", "description": "Log level (INFO, WARN, ERROR, etc.) if detected" },
+          "message": { "type": "string", "description": "Log message content" }
+        },
+        "required": ["message"]
+      }
+    },
+    "line_count": { "type": "integer", "description": "Total number of log lines" }
+  },
+  "required": ["lines", "line_count"]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-get-nodes.json",
+  "title": "Kubectl Get Nodes Output",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "description": "List of nodes",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Node name" },
+          "status": { "type": "string", "description": "Node status (e.g., Ready, NotReady)" },
+          "roles": {
+            "type": "array",
+            "description": "List of node roles",
+            "items": { "type": "string" }
+          },
+          "age": { "type": "string", "description": "Node age (e.g., 5d, 10m, 1h)" },
+          "version": { "type": "string", "description": "Kubernetes version (e.g., v1.28.0)" },
+          "internal_ip": { "type": "string", "description": "Internal IP address (shown with -o wide)" },
+          "external_ip": { "type": "string", "description": "External IP address (shown with -o wide)" },
+          "os_image": { "type": "string", "description": "OS image (shown with -o wide)" },
+          "kernel_version": { "type": "string", "description": "Kernel version (shown with -o wide)" },
+          "container_runtime": { "type": "string", "description": "Container runtime (shown with -o wide)" }
+        },
+        "required": ["name", "status", "roles", "age", "version"]
+      }
+    }
+  },
+  "required": ["nodes"]
+}

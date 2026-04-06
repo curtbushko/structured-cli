@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-get-deployments.json",
+  "title": "Kubectl Get Deployments Output",
+  "type": "object",
+  "properties": {
+    "deployments": {
+      "type": "array",
+      "description": "List of deployments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Deployment name" },
+          "namespace": { "type": "string", "description": "Deployment namespace" },
+          "ready": { "type": "string", "description": "Ready status (e.g., 3/3, 0/1)" },
+          "ready_count": { "type": "integer", "description": "Number of ready replicas" },
+          "desired_count": { "type": "integer", "description": "Number of desired replicas" },
+          "up_to_date": { "type": "integer", "description": "Number of up-to-date replicas" },
+          "available": { "type": "integer", "description": "Number of available replicas" },
+          "age": { "type": "string", "description": "Deployment age (e.g., 5d, 10m, 1h)" }
+        },
+        "required": ["name", "ready", "ready_count", "desired_count", "up_to_date", "available", "age"]
+      }
+    }
+  },
+  "required": ["deployments"]
+}

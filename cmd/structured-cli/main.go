@@ -14,6 +14,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/gh"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/kubectl"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/makejust"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/npm"
@@ -137,6 +138,16 @@ func run() int {
 	registry.Register(gh.NewRepoViewParser())
 	registry.Register(gh.NewRunListParser())
 	registry.Register(gh.NewRunViewParser())
+
+	// Register kubectl parsers
+	registry.Register(kubectl.NewGetPodsParser())
+	registry.Register(kubectl.NewGetServicesParser())
+	registry.Register(kubectl.NewGetDeploymentsParser())
+	registry.Register(kubectl.NewGetNodesParser())
+	registry.Register(kubectl.NewDescribePodParser())
+	registry.Register(kubectl.NewLogsParser())
+	registry.Register(kubectl.NewTopPodsParser())
+	registry.Register(kubectl.NewTopNodesParser())
 
 	// Register file operations parsers
 	registry.Register(fileops.NewLSParser())

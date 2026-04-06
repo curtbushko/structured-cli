@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/kubectl-get-pods.json",
+  "title": "Kubectl Get Pods Output",
+  "type": "object",
+  "properties": {
+    "pods": {
+      "type": "array",
+      "description": "List of pods",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Pod name" },
+          "namespace": { "type": "string", "description": "Pod namespace" },
+          "ready": { "type": "string", "description": "Ready status (e.g., 1/1, 0/1)" },
+          "status": {
+            "type": "string",
+            "description": "Pod status (e.g., Running, Pending, CrashLoopBackOff)"
+          },
+          "restarts": { "type": "integer", "description": "Number of container restarts" },
+          "age": { "type": "string", "description": "Pod age (e.g., 5d, 10m, 1h)" },
+          "ip": { "type": "string", "description": "Pod IP address (shown with -o wide)" },
+          "node": { "type": "string", "description": "Node the pod is running on (shown with -o wide)" }
+        },
+        "required": ["name", "ready", "status", "restarts", "age"]
+      }
+    }
+  },
+  "required": ["pods"]
+}

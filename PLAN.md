@@ -1202,20 +1202,20 @@ func (a *NativeJSONAdapter) Run(ctx context.Context, args []string) (any, error)
 GitHub CLI integration for repository, PR, and issue management.
 
 #### Parsers
-- [ ] `gh pr list` - List pull requests with status, author, labels
-- [ ] `gh pr view` - PR details with reviews, checks, comments
-- [ ] `gh pr status` - PR status for current branch
-- [ ] `gh issue list` - List issues with labels, assignees
-- [ ] `gh issue view` - Issue details with comments
-- [ ] `gh repo view` - Repository metadata
-- [ ] `gh run list` - Workflow runs with status
-- [ ] `gh run view` - Workflow run details with jobs
+- [x] `gh pr list` - List pull requests with status, author, labels
+- [x] `gh pr view` - PR details with reviews, checks, comments
+- [x] `gh pr status` - PR status for current branch
+- [x] `gh issue list` - List issues with labels, assignees
+- [x] `gh issue view` - Issue details with comments
+- [x] `gh repo view` - Repository metadata
+- [x] `gh run list` - Workflow runs with status
+- [x] `gh run view` - Workflow run details with jobs
 
 #### E2E Tests
-- [ ] `gh pr list` returns structured PR data
-- [ ] `gh issue list` returns structured issue data
-- [ ] `gh run list` returns workflow status
-- [ ] Graceful handling when gh not installed
+- [x] `gh pr list` returns structured PR data
+- [x] `gh issue list` returns structured issue data
+- [x] `gh run list` returns workflow status
+- [x] Graceful handling when gh not installed
 
 ### Phase 25: Kubernetes (kubectl) Parsers
 Kubernetes CLI integration for cluster management.
