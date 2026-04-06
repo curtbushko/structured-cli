@@ -1196,56 +1196,60 @@ func (a *NativeJSONAdapter) Run(ctx context.Context, args []string) (any, error)
 
 ---
 
-## Implementation Phases
+## Future Phases
 
-### Phase 1: Core Framework (Week 1-2)
-- [ ] Project structure with hexagonal architecture
-- [ ] CommandMatcher and pattern registration
-- [ ] Reader/Writer interfaces
-- [ ] Basic CLI parsing (--json flag, env var)
-- [ ] Passthrough mode for unsupported commands
-- [ ] Schema registry with embedded schemas
+### Phase 24: GitHub CLI (gh) Parsers
+GitHub CLI integration for repository, PR, and issue management.
 
-### Phase 2: Git Adapter (Week 2-3)
-- [ ] Port Pare's git schemas to JSON Schema
-- [ ] Implement parsers for: status, log, diff, branch, show
-- [ ] Add parsers for: add, commit, push, pull, checkout
-- [ ] Add parsers for: stash, blame, reflog
+#### Parsers
+- [ ] `gh pr list` - List pull requests with status, author, labels
+- [ ] `gh pr view` - PR details with reviews, checks, comments
+- [ ] `gh pr status` - PR status for current branch
+- [ ] `gh issue list` - List issues with labels, assignees
+- [ ] `gh issue view` - Issue details with comments
+- [ ] `gh repo view` - Repository metadata
+- [ ] `gh run list` - Workflow runs with status
+- [ ] `gh run view` - Workflow run details with jobs
 
-### Phase 3: NPM/Node Adapters (Week 3-4)
-- [ ] npm install, audit, outdated, list
-- [ ] npm run, test, info, search
-- [ ] nvm support
+#### E2E Tests
+- [ ] `gh pr list` returns structured PR data
+- [ ] `gh issue list` returns structured issue data
+- [ ] `gh run list` returns workflow status
+- [ ] Graceful handling when gh not installed
 
-### Phase 4: Docker Adapter (Week 4-5)
-- [ ] ps, build, logs, images
-- [ ] run, exec, pull, inspect
-- [ ] compose-up, compose-down, compose-ps
-- [ ] network-ls, volume-ls, stats
+### Phase 25: Kubernetes (kubectl) Parsers
+Kubernetes CLI integration for cluster management.
 
-### Phase 5: Test/Build/Lint Adapters (Week 5-6)
-- [ ] Test: pytest, jest, vitest, mocha, playwright
-- [ ] Build: tsc, esbuild, vite, webpack, turbo, nx
-- [ ] Lint: eslint, prettier, biome, stylelint
+#### Parsers
+- [ ] `kubectl get pods` - Pod listing with status, restarts, age
+- [ ] `kubectl get services` - Service listing with type, cluster IP, ports
+- [ ] `kubectl get deployments` - Deployment listing with replicas
+- [ ] `kubectl get nodes` - Node listing with status, roles
+- [ ] `kubectl describe pod` - Pod details with events
+- [ ] `kubectl logs` - Container logs with timestamps
+- [ ] `kubectl top pods` - Resource usage metrics
+- [ ] `kubectl top nodes` - Node resource metrics
 
-### Phase 6: Language-specific Adapters (Week 6-7)
-- [ ] Python: pip, mypy, ruff, uv, black
-- [ ] Rust: cargo build/test/clippy/fmt/audit
-- [ ] Go: build, test, vet, fmt, golangci-lint
+#### E2E Tests
+- [ ] `kubectl get pods` returns structured pod data
+- [ ] `kubectl get services` returns service data
+- [ ] Graceful handling when kubectl not configured
+- [ ] Handles multiple namespaces
 
-### Phase 7: Remaining Adapters (Week 7-8)
-- [ ] GitHub CLI (gh)
-- [ ] Search (ripgrep, fd, jq)
-- [ ] HTTP (curl wrapper)
-- [ ] Make/just
-- [ ] K8s (kubectl, helm)
-- [ ] Security (trivy, semgrep, gitleaks)
+### Phase 26: Helm Parsers
+Helm package manager integration.
 
-### Phase 8: Polish (Week 8-9)
-- [ ] Comprehensive test coverage
-- [ ] Documentation
-- [ ] Homebrew formula
-- [ ] GitHub releases with binaries
+#### Parsers
+- [ ] `helm list` - Release listing with status, chart, app version
+- [ ] `helm status` - Release status with resources
+- [ ] `helm history` - Release history with revisions
+- [ ] `helm search repo` - Chart search results
+- [ ] `helm show values` - Chart default values
+
+#### E2E Tests
+- [ ] `helm list` returns structured release data
+- [ ] `helm status` returns release status
+- [ ] Graceful handling when helm not installed
 
 ---
 

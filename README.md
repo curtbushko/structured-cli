@@ -202,6 +202,89 @@ git status --json
 | `du` | Disk usage |
 | `df` | Filesystem info |
 
+## Output Filters
+
+structured-cli includes intelligent filters to reduce token usage:
+
+### Small Output Filter (default: enabled)
+Detects terse outputs and returns compact status JSON:
+
+```bash
+$ structured-cli git status --json  # clean repo
+{"status": "clean", "summary": "nothing to commit, working tree clean"}
+
+# Disable for full output
+$ structured-cli git status --json --disable-filter=small
+{"branch": "main", "clean": true, "staged": [], "modified": [], ...}
+```
+
+### Deduplication Filter (default: enabled)
+Collapses identical items in arrays:
+
+```bash
+$ structured-cli eslint src/ --json
+{"issues": [
+  {"rule": "no-unused-vars", "count": 45},
+  {"rule": "semi", "count": 30}
+], "dedupStats": {"originalCount": 75, "dedupedCount": 2}}
+```
+
+### Success Filter (default: enabled for test/lint)
+Removes passing items, keeps only failures:
+
+```bash
+$ structured-cli pytest tests/ --json
+{"tests": [
+  {"name": "test_login", "outcome": "failed", "message": "..."}
+], "filterStats": {"passed": 47, "failed": 1, "removed": 47}}
+```
+
+### Disabling Filters
+
+```bash
+# Disable specific filter
+--disable-filter=small
+--disable-filter=dedupe
+--disable-filter=success
+
+# Disable multiple
+--disable-filter=small,dedupe
+
+# Disable all
+--disable-filter=all
+
+# Environment variable
+STRUCTURED_CLI_DISABLE_FILTER=small,dedupe
+```
+
+## Usage Statistics
+
+Track command usage and token savings:
+
+```bash
+# View summary
+$ structured-cli stats
+Total Commands:      226
+Total Tokens Saved:  15420
+Avg Savings:         68.3%
+
+# Recent history
+$ structured-cli stats --history
+
+# JSON export
+$ structured-cli stats --json
+
+# Filter by parser
+$ structured-cli stats --by-parser
+
+# Current project only
+$ structured-cli stats --project
+```
+
+Data stored in `~/.local/share/structured-cli/tracking.db` (SQLite).
+
+Disable tracking: `STRUCTURED_CLI_NO_TRACKING=1`
+
 ## Error Handling
 
 Errors are returned as JSON when in JSON mode:
