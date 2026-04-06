@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-run-view.json",
+  "title": "GitHub Run View Output",
+  "type": "object",
+  "properties": {
+    "database_id": { "type": "integer", "description": "Run ID" },
+    "display_title": { "type": "string", "description": "Run display title" },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "in_progress", "completed"],
+      "description": "Run status"
+    },
+    "conclusion": {
+      "type": ["string", "null"],
+      "enum": ["success", "failure", "cancelled", "skipped", "neutral", "action_required", "timed_out", "stale", null],
+      "description": "Run conclusion (null if in progress)"
+    },
+    "workflow_name": { "type": "string", "description": "Workflow name" },
+    "head_branch": { "type": "string", "description": "Branch that triggered the run" },
+    "head_sha": { "type": "string", "description": "Commit SHA" },
+    "event": { "type": "string", "description": "Trigger event (push, pull_request, etc.)" },
+    "actor": {
+      "type": "object",
+      "properties": {
+        "login": { "type": "string", "description": "GitHub username" },
+        "name": { "type": "string", "description": "Display name" }
+      },
+      "required": ["login"]
+    },
+    "jobs": {
+      "type": "array",
+      "description": "Jobs in the workflow run",
+      "items": {
+        "type": "object",
+        "properties": {
+          "database_id": { "type": "integer", "description": "Job ID" },
+          "name": { "type": "string", "description": "Job name" },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "in_progress", "completed"],
+            "description": "Job status"
+          },
+          "conclusion": {
+            "type": ["string", "null"],
+            "enum": ["success", "failure", "cancelled", "skipped", "neutral", "action_required", "timed_out", "stale", null],
+            "description": "Job conclusion (null if in progress)"
+          },
+          "started_at": { "type": ["string", "null"], "description": "Job start timestamp" },
+          "completed_at": { "type": ["string", "null"], "description": "Job completion timestamp" },
+          "steps": {
+            "type": "array",
+            "description": "Steps in the job",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Step name" },
+                "status": {
+                  "type": "string",
+                  "enum": ["queued", "in_progress", "completed"],
+                  "description": "Step status"
+                },
+                "conclusion": {
+                  "type": ["string", "null"],
+                  "enum": ["success", "failure", "cancelled", "skipped", "neutral", "action_required", "timed_out", "stale", null],
+                  "description": "Step conclusion"
+                },
+                "number": { "type": "integer", "description": "Step number" }
+              },
+              "required": ["name", "status", "number"]
+            }
+          }
+        },
+        "required": ["database_id", "name", "status"]
+      }
+    },
+    "url": { "type": "string", "description": "Run URL" },
+    "created_at": { "type": "string", "description": "Creation timestamp" },
+    "updated_at": { "type": "string", "description": "Last update timestamp" },
+    "run_started_at": { "type": "string", "description": "Run start timestamp" }
+  },
+  "required": ["database_id", "status", "jobs"]
+}

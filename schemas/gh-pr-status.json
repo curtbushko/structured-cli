@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-pr-status.json",
+  "title": "GitHub PR Status Output",
+  "type": "object",
+  "properties": {
+    "current_branch": {
+      "type": ["object", "null"],
+      "description": "PR for current branch",
+      "properties": {
+        "number": { "type": "integer", "description": "PR number" },
+        "title": { "type": "string", "description": "PR title" },
+        "head_branch": { "type": "string", "description": "Head branch name" },
+        "url": { "type": "string", "description": "PR URL" },
+        "state": {
+          "type": "string",
+          "enum": ["OPEN", "CLOSED", "MERGED"],
+          "description": "PR state"
+        },
+        "review_status": { "type": "string", "description": "Review status" },
+        "check_status": { "type": "string", "description": "Check status" }
+      },
+      "required": ["number", "title", "head_branch", "url", "state"]
+    },
+    "created_by_you": {
+      "type": "array",
+      "description": "PRs created by you",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "integer", "description": "PR number" },
+          "title": { "type": "string", "description": "PR title" },
+          "head_branch": { "type": "string", "description": "Head branch name" },
+          "url": { "type": "string", "description": "PR URL" }
+        },
+        "required": ["number", "title", "head_branch", "url"]
+      }
+    },
+    "requesting_review": {
+      "type": "array",
+      "description": "PRs requesting your review",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "integer", "description": "PR number" },
+          "title": { "type": "string", "description": "PR title" },
+          "head_branch": { "type": "string", "description": "Head branch name" },
+          "url": { "type": "string", "description": "PR URL" }
+        },
+        "required": ["number", "title", "head_branch", "url"]
+      }
+    }
+  },
+  "required": ["created_by_you", "requesting_review"]
+}

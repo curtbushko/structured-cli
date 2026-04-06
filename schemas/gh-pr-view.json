@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-pr-view.json",
+  "title": "GitHub PR View Output",
+  "type": "object",
+  "properties": {
+    "number": { "type": "integer", "description": "PR number" },
+    "title": { "type": "string", "description": "PR title" },
+    "body": { "type": "string", "description": "PR description body" },
+    "state": {
+      "type": "string",
+      "enum": ["OPEN", "CLOSED", "MERGED"],
+      "description": "PR state"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "login": { "type": "string", "description": "GitHub username" },
+        "name": { "type": "string", "description": "Display name" }
+      },
+      "required": ["login"]
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "color": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "required": ["name"]
+      }
+    },
+    "assignees": {
+      "type": "array",
+      "description": "PR assignees",
+      "items": {
+        "type": "object",
+        "properties": {
+          "login": { "type": "string" },
+          "name": { "type": "string" }
+        },
+        "required": ["login"]
+      }
+    },
+    "reviewers": {
+      "type": "array",
+      "description": "PR reviewers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "login": { "type": "string" },
+          "name": { "type": "string" }
+        },
+        "required": ["login"]
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "description": "PR reviews",
+      "items": {
+        "type": "object",
+        "properties": {
+          "author": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string" },
+              "name": { "type": "string" }
+            },
+            "required": ["login"]
+          },
+          "state": {
+            "type": "string",
+            "enum": ["PENDING", "APPROVED", "CHANGES_REQUESTED", "COMMENTED", "DISMISSED"],
+            "description": "Review state"
+          },
+          "body": { "type": "string", "description": "Review comment body" },
+          "submitted_at": { "type": "string", "description": "Submission timestamp" }
+        },
+        "required": ["author", "state"]
+      }
+    },
+    "checks": {
+      "type": "array",
+      "description": "CI/CD checks",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Check name" },
+          "status": { "type": "string", "description": "Check status" },
+          "conclusion": { "type": "string", "description": "Check conclusion" },
+          "url": { "type": "string", "description": "Details URL" }
+        },
+        "required": ["name", "status"]
+      }
+    },
+    "comments": { "type": "integer", "description": "Number of comments" },
+    "additions": { "type": "integer", "description": "Lines added" },
+    "deletions": { "type": "integer", "description": "Lines deleted" },
+    "changed_files": { "type": "integer", "description": "Number of changed files" },
+    "mergeable": {
+      "type": "string",
+      "enum": ["MERGEABLE", "CONFLICTING", "UNKNOWN"],
+      "description": "Mergeable state"
+    },
+    "created_at": { "type": "string", "description": "Creation timestamp" },
+    "updated_at": { "type": "string", "description": "Last update timestamp" },
+    "url": { "type": "string", "description": "PR URL" }
+  },
+  "required": ["number", "title", "state", "author"]
+}

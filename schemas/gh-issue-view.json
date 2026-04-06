@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-issue-view.json",
+  "title": "GitHub Issue View Output",
+  "type": "object",
+  "properties": {
+    "number": { "type": "integer", "description": "Issue number" },
+    "title": { "type": "string", "description": "Issue title" },
+    "body": { "type": "string", "description": "Issue description body" },
+    "state": {
+      "type": "string",
+      "enum": ["OPEN", "CLOSED"],
+      "description": "Issue state"
+    },
+    "author": {
+      "type": "object",
+      "properties": {
+        "login": { "type": "string", "description": "GitHub username" },
+        "name": { "type": "string", "description": "Display name" }
+      },
+      "required": ["login"]
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Label name" },
+          "color": { "type": "string", "description": "Hex color code" },
+          "description": { "type": "string", "description": "Label description" }
+        },
+        "required": ["name"]
+      }
+    },
+    "assignees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "login": { "type": "string", "description": "GitHub username" },
+          "name": { "type": "string", "description": "Display name" }
+        },
+        "required": ["login"]
+      }
+    },
+    "milestone": {
+      "type": ["object", "null"],
+      "properties": {
+        "title": { "type": "string", "description": "Milestone title" },
+        "number": { "type": "integer", "description": "Milestone number" },
+        "state": { "type": "string", "description": "Milestone state" }
+      },
+      "required": ["title", "number"]
+    },
+    "project": {
+      "type": ["object", "null"],
+      "properties": {
+        "title": { "type": "string", "description": "Project title" },
+        "number": { "type": "integer", "description": "Project number" }
+      },
+      "required": ["title"]
+    },
+    "reactions": {
+      "type": "object",
+      "properties": {
+        "thumbs_up": { "type": "integer", "description": "Thumbs up count" },
+        "thumbs_down": { "type": "integer", "description": "Thumbs down count" },
+        "laugh": { "type": "integer", "description": "Laugh count" },
+        "hooray": { "type": "integer", "description": "Hooray count" },
+        "confused": { "type": "integer", "description": "Confused count" },
+        "heart": { "type": "integer", "description": "Heart count" },
+        "rocket": { "type": "integer", "description": "Rocket count" },
+        "eyes": { "type": "integer", "description": "Eyes count" }
+      }
+    },
+    "comments": { "type": "integer", "description": "Number of comments" },
+    "created_at": { "type": "string", "description": "Creation timestamp" },
+    "updated_at": { "type": "string", "description": "Last update timestamp" },
+    "closed_at": { "type": ["string", "null"], "description": "Close timestamp if closed" },
+    "url": { "type": "string", "description": "Issue URL" }
+  },
+  "required": ["number", "title", "state", "author"]
+}

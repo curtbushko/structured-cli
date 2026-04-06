@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-issue-list.json",
+  "title": "GitHub Issue List Output",
+  "type": "object",
+  "properties": {
+    "issues": {
+      "type": "array",
+      "description": "List of issues",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "integer", "description": "Issue number" },
+          "title": { "type": "string", "description": "Issue title" },
+          "state": {
+            "type": "string",
+            "enum": ["OPEN", "CLOSED"],
+            "description": "Issue state"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string", "description": "GitHub username" },
+              "name": { "type": "string", "description": "Display name" }
+            },
+            "required": ["login"]
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Label name" },
+                "color": { "type": "string", "description": "Hex color code" },
+                "description": { "type": "string", "description": "Label description" }
+              },
+              "required": ["name"]
+            }
+          },
+          "assignees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "login": { "type": "string", "description": "GitHub username" },
+                "name": { "type": "string", "description": "Display name" }
+              },
+              "required": ["login"]
+            }
+          },
+          "created_at": { "type": "string", "description": "Creation timestamp" },
+          "updated_at": { "type": "string", "description": "Last update timestamp" },
+          "url": { "type": "string", "description": "Issue URL" },
+          "comments": { "type": "integer", "description": "Number of comments" }
+        },
+        "required": ["number", "title", "state", "author"]
+      }
+    }
+  },
+  "required": ["issues"]
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-pr-list.json",
+  "title": "GitHub PR List Output",
+  "type": "object",
+  "properties": {
+    "pull_requests": {
+      "type": "array",
+      "description": "List of pull requests",
+      "items": {
+        "type": "object",
+        "properties": {
+          "number": { "type": "integer", "description": "PR number" },
+          "title": { "type": "string", "description": "PR title" },
+          "state": {
+            "type": "string",
+            "enum": ["OPEN", "CLOSED", "MERGED"],
+            "description": "PR state"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "login": { "type": "string", "description": "GitHub username" },
+              "name": { "type": "string", "description": "Display name" }
+            },
+            "required": ["login"]
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Label name" },
+                "color": { "type": "string", "description": "Hex color code" },
+                "description": { "type": "string", "description": "Label description" }
+              },
+              "required": ["name"]
+            }
+          },
+          "created_at": { "type": "string", "description": "Creation timestamp" },
+          "updated_at": { "type": "string", "description": "Last update timestamp" },
+          "url": { "type": "string", "description": "PR URL" },
+          "head_branch": { "type": "string", "description": "Head branch name" },
+          "base_branch": { "type": "string", "description": "Base branch name" },
+          "draft": { "type": "boolean", "description": "Whether PR is a draft" }
+        },
+        "required": ["number", "title", "state", "author"]
+      }
+    }
+  },
+  "required": ["pull_requests"]
+}

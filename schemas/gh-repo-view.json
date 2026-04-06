@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/gh-repo-view.json",
+  "title": "GitHub Repo View Output",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Repository name" },
+    "full_name": { "type": "string", "description": "Full repository name (owner/repo)" },
+    "description": { "type": "string", "description": "Repository description" },
+    "url": { "type": "string", "description": "Repository URL" },
+    "homepage_url": { "type": "string", "description": "Homepage URL if set" },
+    "default_branch": { "type": "string", "description": "Default branch name" },
+    "visibility": {
+      "type": "string",
+      "enum": ["PUBLIC", "PRIVATE", "INTERNAL"],
+      "description": "Repository visibility"
+    },
+    "fork": { "type": "boolean", "description": "Whether repo is a fork" },
+    "archived": { "type": "boolean", "description": "Whether repo is archived" },
+    "disabled": { "type": "boolean", "description": "Whether repo is disabled" },
+    "template": { "type": "boolean", "description": "Whether repo is a template" },
+    "owner": {
+      "type": "object",
+      "properties": {
+        "login": { "type": "string", "description": "Owner login/username" },
+        "type": {
+          "type": "string",
+          "enum": ["User", "Organization"],
+          "description": "Owner type"
+        }
+      },
+      "required": ["login", "type"]
+    },
+    "language": { "type": "string", "description": "Primary language" },
+    "license": {
+      "type": "object",
+      "properties": {
+        "key": { "type": "string", "description": "License key (e.g., mit, apache-2.0)" },
+        "name": { "type": "string", "description": "License name" },
+        "spdx_id": { "type": "string", "description": "SPDX identifier" }
+      },
+      "required": ["key", "name", "spdx_id"]
+    },
+    "topics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repository topics"
+    },
+    "stars": { "type": "integer", "description": "Star count" },
+    "watchers": { "type": "integer", "description": "Watcher count" },
+    "forks": { "type": "integer", "description": "Fork count" },
+    "open_issues": { "type": "integer", "description": "Open issue count" },
+    "created_at": { "type": "string", "description": "Creation timestamp" },
+    "updated_at": { "type": "string", "description": "Last update timestamp" },
+    "pushed_at": { "type": "string", "description": "Last push timestamp" }
+  },
+  "required": ["name", "full_name", "owner", "visibility"]
+}

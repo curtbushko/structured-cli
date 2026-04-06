@@ -11,6 +11,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/cargo"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/docker"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/fileops"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/gh"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
@@ -126,6 +127,16 @@ func run() int {
 	registry.Register(docker.NewComposeUpParser())
 	registry.Register(docker.NewComposeDownParser())
 	registry.Register(docker.NewComposePSParser())
+
+	// Register GitHub CLI parsers
+	registry.Register(gh.NewPRListParser())
+	registry.Register(gh.NewPRViewParser())
+	registry.Register(gh.NewPRStatusParser())
+	registry.Register(gh.NewIssueListParser())
+	registry.Register(gh.NewIssueViewParser())
+	registry.Register(gh.NewRepoViewParser())
+	registry.Register(gh.NewRunListParser())
+	registry.Register(gh.NewRunViewParser())
 
 	// Register file operations parsers
 	registry.Register(fileops.NewLSParser())
