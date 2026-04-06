@@ -76,9 +76,9 @@ func TestStatsCommand_ByFilter(t *testing.T) {
 		}
 
 		var result []struct {
-			FilterName      string `json:"filter_name"`
-			ActivationCount int    `json:"activation_count"`
-			TotalTokensSaved int   `json:"total_tokens_saved"`
+			FilterName       string `json:"filter_name"`
+			ActivationCount  int    `json:"activation_count"`
+			TotalTokensSaved int    `json:"total_tokens_saved"`
 		}
 		if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 			t.Fatalf("JSON unmarshal error = %v, output: %s", err, buf.String())
@@ -143,8 +143,8 @@ func TestStatsCommand_SummaryShowsFilteredCount(t *testing.T) {
 		}
 
 		var result struct {
-			TotalCommands  int `json:"total_commands"`
-			FilteredCount  int `json:"filtered_count"`
+			TotalCommands int `json:"total_commands"`
+			FilteredCount int `json:"filtered_count"`
 		}
 		if err := json.Unmarshal(buf.Bytes(), &result); err != nil {
 			t.Fatalf("JSON unmarshal error = %v, output: %s", err, buf.String())

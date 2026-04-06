@@ -18,7 +18,7 @@ import (
 // statsFlags holds the flag values for the stats command.
 type statsFlags struct {
 	json     bool
-	history  int  // 0 = disabled, >0 = limit
+	history  int // 0 = disabled, >0 = limit
 	byParser bool
 	byFilter bool
 	project  bool // if true, filter to current working directory

@@ -53,11 +53,11 @@ func TestFilterStats(t *testing.T) {
 func TestStatsSummary_FilteredExcluded(t *testing.T) {
 	t.Run("StatsSummary includes filtered count", func(t *testing.T) {
 		summary := domain.NewStatsSummaryWithFiltered(
-			10,    // total commands
-			500,   // total tokens saved
-			50.0,  // avg savings percent
+			10,   // total commands
+			500,  // total tokens saved
+			50.0, // avg savings percent
 			time.Second,
-			3,     // filtered count (commands that had filters applied)
+			3, // filtered count (commands that had filters applied)
 		)
 
 		if summary.FilteredCount != 3 {
@@ -69,11 +69,11 @@ func TestStatsSummary_FilteredExcluded(t *testing.T) {
 		// If 10 commands total saved 500 tokens, but 3 were filtered,
 		// we want to know the savings from unfiltered commands only
 		summary := domain.NewStatsSummaryWithFiltered(
-			10,    // total commands
-			500,   // total tokens saved (includes filtered)
-			50.0,  // avg savings percent
+			10,   // total commands
+			500,  // total tokens saved (includes filtered)
+			50.0, // avg savings percent
 			time.Second,
-			3,     // filtered count
+			3, // filtered count
 		)
 
 		// The filtered count should be trackable
