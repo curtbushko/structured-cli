@@ -24,6 +24,10 @@ const (
 	colCPUPercent    = "CPU%"
 	colMemory        = "MEMORY(bytes)"
 	colMemoryPercent = "MEMORY%"
+
+	// Resource type aliases.
+	resPod  = "pod"
+	resPods = "pods"
 )
 
 // columnInfo holds the position and width of a column.

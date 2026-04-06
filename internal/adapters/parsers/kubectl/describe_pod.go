@@ -185,7 +185,7 @@ func (p *DescribePodParser) Matches(cmd string, subcommands []string) bool {
 	}
 	// Match "pod", "pods", or "po" (the common aliases)
 	resource := subcommands[1]
-	return resource == "pod" || resource == "pods" || resource == "po"
+	return resource == resPod || resource == resPods || resource == "po"
 }
 
 // parseDescribeOutput parses the describe pod output into structured data.

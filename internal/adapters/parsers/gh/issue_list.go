@@ -101,7 +101,7 @@ func (p *IssueListParser) Matches(cmd string, subcommands []string) bool {
 	if len(subcommands) < 2 {
 		return false
 	}
-	return subcommands[0] == "issue" && subcommands[1] == "list"
+	return subcommands[0] == subCmdIssue && subcommands[1] == subCmdList
 }
 
 // convertAssignees converts gh authors to our domain type for assignees.

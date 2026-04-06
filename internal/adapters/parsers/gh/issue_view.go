@@ -131,7 +131,7 @@ func (p *IssueViewParser) Matches(cmd string, subcommands []string) bool {
 	if len(subcommands) < 2 {
 		return false
 	}
-	return subcommands[0] == "issue" && subcommands[1] == "view"
+	return subcommands[0] == subCmdIssue && subcommands[1] == subCmdView
 }
 
 // convertMilestone converts a gh milestone to our domain type.

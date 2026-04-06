@@ -70,7 +70,7 @@ func (p *GetPodsParser) Matches(cmd string, subcommands []string) bool {
 	}
 	// Match "pods", "pod", or "po" (the common aliases)
 	resource := subcommands[1]
-	return resource == "pods" || resource == "pod" || resource == "po"
+	return resource == "pods" || resource == resPod || resource == "po"
 }
 
 // parsePodLine parses a single line of kubectl get pods output.

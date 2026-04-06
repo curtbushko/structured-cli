@@ -10,6 +10,8 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/kubectl"
 )
 
+const noResourcesFoundMsg = "No resources found in default namespace."
+
 func TestGetServicesParser_ParseSingleService(t *testing.T) {
 	input := `NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP   30d`
@@ -223,7 +225,7 @@ func TestGetServicesParser_EmptyOutput(t *testing.T) {
 }
 
 func TestGetServicesParser_NoResourcesFound(t *testing.T) {
-	input := `No resources found in default namespace.`
+	input := noResourcesFoundMsg
 
 	parser := kubectl.NewGetServicesParser()
 	result, err := parser.Parse(strings.NewReader(input))

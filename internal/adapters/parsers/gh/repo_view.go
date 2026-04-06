@@ -292,7 +292,7 @@ func (p *RepoViewParser) Matches(cmd string, subcommands []string) bool {
 	if len(subcommands) < 2 {
 		return false
 	}
-	return subcommands[0] == "repo" && subcommands[1] == "view"
+	return subcommands[0] == subCmdRepo && subcommands[1] == subCmdView
 }
 
 // convertTopics converts gh repository topics to a string slice.

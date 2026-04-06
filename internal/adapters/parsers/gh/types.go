@@ -3,6 +3,16 @@
 // converting raw gh command output into structured domain types.
 package gh
 
+// Subcommand constants for gh commands.
+const (
+	subCmdList  = "list"
+	subCmdView  = "view"
+	subCmdIssue = "issue"
+	subCmdPR    = "pr"
+	subCmdRepo  = "repo"
+	subCmdRun   = "run"
+)
+
 // Author represents a GitHub user.
 type Author struct {
 	// Login is the GitHub username.
