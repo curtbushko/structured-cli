@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/helm-show-values.json",
+  "title": "Helm Show Values Output",
+  "type": "object",
+  "properties": {
+    "values": {
+      "type": "array",
+      "description": "Extracted chart values with top-level keys",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string", "description": "The value key/path (e.g., 'replicaCount', 'image')" },
+          "value": { "description": "The default value (can be any type: string, number, boolean, array, object, or null)" },
+          "description": { "type": "string", "description": "Description from @param comments" }
+        },
+        "required": ["key"]
+      }
+    },
+    "raw": { "type": "string", "description": "Raw YAML output from helm show values" }
+  },
+  "required": ["raw"]
+}

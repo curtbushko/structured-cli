@@ -14,6 +14,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/gh"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/git"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/golang"
+	"github.com/curtbushko/structured-cli/internal/adapters/parsers/helm"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/kubectl"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/lint"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/makejust"
@@ -138,6 +139,13 @@ func run() int {
 	registry.Register(gh.NewRepoViewParser())
 	registry.Register(gh.NewRunListParser())
 	registry.Register(gh.NewRunViewParser())
+
+	// Register helm parsers
+	registry.Register(helm.NewListParser())
+	registry.Register(helm.NewStatusParser())
+	registry.Register(helm.NewHistoryParser())
+	registry.Register(helm.NewSearchRepoParser())
+	registry.Register(helm.NewShowValuesParser())
 
 	// Register kubectl parsers
 	registry.Register(kubectl.NewGetPodsParser())

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/helm-search-repo.json",
+  "title": "Helm Search Repo Output",
+  "type": "object",
+  "properties": {
+    "charts": {
+      "type": "array",
+      "description": "List of charts matching the search",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Chart name including repository prefix (e.g., bitnami/nginx)" },
+          "chart_version": { "type": "string", "description": "Version of the chart" },
+          "app_version": { "type": "string", "description": "Version of the application in the chart" },
+          "description": { "type": "string", "description": "Chart description (may be truncated)" }
+        },
+        "required": ["name", "chart_version"]
+      }
+    }
+  },
+  "required": ["charts"]
+}

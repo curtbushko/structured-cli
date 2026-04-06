@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/helm-history.json",
+  "title": "Helm History Output",
+  "type": "object",
+  "properties": {
+    "revisions": {
+      "type": "array",
+      "description": "List of release revisions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "revision": { "type": "integer", "description": "Revision number" },
+          "updated": { "type": "string", "description": "Timestamp of this revision" },
+          "status": {
+            "type": "string",
+            "description": "Status at this revision (e.g., deployed, superseded, failed, pending-upgrade)"
+          },
+          "chart": { "type": "string", "description": "Chart name and version" },
+          "app_version": { "type": "string", "description": "Application version from the chart" },
+          "description": { "type": "string", "description": "Revision description (e.g., Install complete, Upgrade complete, Rollback to N)" }
+        },
+        "required": ["revision", "status", "chart"]
+      }
+    }
+  },
+  "required": ["revisions"]
+}

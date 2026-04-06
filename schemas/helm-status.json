@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://structured-cli.dev/schemas/helm-status.json",
+  "title": "Helm Status Output",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Release name" },
+    "namespace": { "type": "string", "description": "Kubernetes namespace where the release is installed" },
+    "revision": { "type": "integer", "description": "Current revision number" },
+    "status": {
+      "type": "string",
+      "description": "Release status (e.g., deployed, failed, pending-install, pending-upgrade, uninstalling)"
+    },
+    "last_deployed": { "type": "string", "description": "Timestamp of the last deployment" },
+    "description": { "type": "string", "description": "Status description (e.g., for failed deployments)" },
+    "notes": { "type": "string", "description": "NOTES.txt output from the chart" },
+    "resources": {
+      "type": "array",
+      "description": "Kubernetes resources in the release",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": { "type": "string", "description": "Kubernetes resource kind (e.g., Deployment, Service)" },
+          "name": { "type": "string", "description": "Resource name" },
+          "namespace": { "type": "string", "description": "Resource namespace" }
+        },
+        "required": ["kind", "name"]
+      }
+    }
+  },
+  "required": ["name", "status"]
+}

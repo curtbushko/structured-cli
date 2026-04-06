@@ -1221,20 +1221,20 @@ GitHub CLI integration for repository, PR, and issue management.
 Kubernetes CLI integration for cluster management.
 
 #### Parsers
-- [ ] `kubectl get pods` - Pod listing with status, restarts, age
-- [ ] `kubectl get services` - Service listing with type, cluster IP, ports
-- [ ] `kubectl get deployments` - Deployment listing with replicas
-- [ ] `kubectl get nodes` - Node listing with status, roles
-- [ ] `kubectl describe pod` - Pod details with events
-- [ ] `kubectl logs` - Container logs with timestamps
-- [ ] `kubectl top pods` - Resource usage metrics
-- [ ] `kubectl top nodes` - Node resource metrics
+- [x] `kubectl get pods` - Pod listing with status, restarts, age
+- [x] `kubectl get services` - Service listing with type, cluster IP, ports
+- [x] `kubectl get deployments` - Deployment listing with replicas
+- [x] `kubectl get nodes` - Node listing with status, roles
+- [x] `kubectl describe pod` - Pod details with events
+- [x] `kubectl logs` - Container logs with timestamps
+- [x] `kubectl top pods` - Resource usage metrics
+- [x] `kubectl top nodes` - Node resource metrics
 
 #### E2E Tests
-- [ ] `kubectl get pods` returns structured pod data
-- [ ] `kubectl get services` returns service data
-- [ ] Graceful handling when kubectl not configured
-- [ ] Handles multiple namespaces
+- [x] `kubectl get pods` returns structured pod data
+- [x] `kubectl get services` returns service data
+- [x] Graceful handling when kubectl not configured
+- [x] Handles multiple namespaces
 
 ### Phase 26: Helm Parsers
 Helm package manager integration.
