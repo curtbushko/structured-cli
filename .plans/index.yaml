@@ -1,5 +1,5 @@
 project: "structured-cli"
-current_phase: 26
+current_phase: 27
 phases:
   - id: 1
     name: "Project Setup"
@@ -131,3 +131,8 @@ phases:
     file: "phase-26-helm-parsers.md"
     status: completed
     progress: "8/8"
+  - id: 27
+    name: "Enhanced Stats Output"
+    file: "phase-27-enhanced-stats.md"
+    status: completed
+    progress: "5/5"

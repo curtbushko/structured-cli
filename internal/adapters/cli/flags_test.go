@@ -4,6 +4,8 @@ package cli
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExtractJSONFlag(t *testing.T) {
@@ -83,6 +85,102 @@ func TestExtractJSONFlag(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExtractStatsFlag_Present(t *testing.T) {
+	// Arrange
+	args := []string{"git", "--stats", "status"}
+
+	// Act
+	statsFound, remaining := ExtractStatsFlag(args)
+
+	// Assert
+	assert.True(t, statsFound, "should find --stats flag")
+	assert.Equal(t, []string{"git", "status"}, remaining, "should remove --stats from args")
+}
+
+func TestExtractStatsFlag_Absent(t *testing.T) {
+	// Arrange
+	args := []string{"git", "status"}
+
+	// Act
+	statsFound, remaining := ExtractStatsFlag(args)
+
+	// Assert
+	assert.False(t, statsFound, "should not find --stats flag")
+	assert.Equal(t, []string{"git", "status"}, remaining, "args should be unchanged")
+}
+
+func TestExtractStatsFlag_EmptyArgs(t *testing.T) {
+	// Arrange
+	args := []string{}
+
+	// Act
+	statsFound, remaining := ExtractStatsFlag(args)
+
+	// Assert
+	assert.False(t, statsFound)
+	assert.Equal(t, []string{}, remaining)
+}
+
+func TestExtractStatsFlag_MultipleOccurrences(t *testing.T) {
+	// Arrange
+	args := []string{"--stats", "git", "--stats", "status"}
+
+	// Act
+	statsFound, remaining := ExtractStatsFlag(args)
+
+	// Assert
+	assert.True(t, statsFound)
+	assert.Equal(t, []string{"git", "status"}, remaining)
+}
+
+func TestExtractThemeFlag_Present(t *testing.T) {
+	// Arrange
+	args := []string{"git", "--theme=dark", "status"}
+
+	// Act
+	themeName, remaining := ExtractThemeFlag(args)
+
+	// Assert
+	assert.Equal(t, "dark", themeName, "should extract theme name")
+	assert.Equal(t, []string{"git", "status"}, remaining, "should remove --theme from args")
+}
+
+func TestExtractThemeFlag_Absent(t *testing.T) {
+	// Arrange
+	args := []string{"git", "status"}
+
+	// Act
+	themeName, remaining := ExtractThemeFlag(args)
+
+	// Assert
+	assert.Equal(t, "", themeName, "should return empty string when no --theme flag")
+	assert.Equal(t, []string{"git", "status"}, remaining, "args should be unchanged")
+}
+
+func TestExtractThemeFlag_EmptyValue(t *testing.T) {
+	// Arrange
+	args := []string{"git", "--theme=", "status"}
+
+	// Act
+	themeName, remaining := ExtractThemeFlag(args)
+
+	// Assert
+	assert.Equal(t, "", themeName, "should return empty string for empty theme value")
+	assert.Equal(t, []string{"git", "status"}, remaining)
+}
+
+func TestExtractThemeFlag_LightTheme(t *testing.T) {
+	// Arrange
+	args := []string{"--theme=light", "git", "status"}
+
+	// Act
+	themeName, remaining := ExtractThemeFlag(args)
+
+	// Assert
+	assert.Equal(t, "light", themeName)
+	assert.Equal(t, []string{"git", "status"}, remaining)
 }
 
 func TestShouldOutputJSON(t *testing.T) {

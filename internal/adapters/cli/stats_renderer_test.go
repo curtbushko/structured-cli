@@ -57,6 +57,14 @@ func (m *mockThemeProvider) Name() string {
 	return m.name
 }
 
+func (m *mockThemeProvider) ListThemes() []string {
+	return []string{m.name}
+}
+
+func (m *mockThemeProvider) SetTheme(_ string) error {
+	return nil
+}
+
 func TestHandler_StatsFlag_ShowsEnhancedOutput(t *testing.T) {
 	// Arrange: handler with mock tracker returning sample stats, --stats flag provided
 	runner := &mockRunner{stdout: "On branch main\nnothing to commit"}

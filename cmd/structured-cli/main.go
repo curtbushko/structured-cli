@@ -188,20 +188,17 @@ func run() int {
 	// Create success filter for removing passing tests from output
 	successFilter := application.NewSuccessFilterer()
 
-	// Create theme provider for stats rendering (flair with fallback to default)
-	themeProvider := theme.NewDefaultThemeProvider()
+	// Create theme provider for stats rendering (uses flair for built-in themes)
+	themeProvider := theme.NewFlairThemeProvider()
 
 	// Create CLI handler (inbound adapter) with tracker, small filter, deduplicator, success filter, and stats renderer
 	handler := cli.NewHandlerWithStatsRenderer(execRunner, registry, tracker, smallFilter, deduper, successFilter, nil, themeProvider)
 
 	// Set theme resolver so --theme flag selects the appropriate ThemeProvider at runtime
 	handler.SetThemeResolver(func(name string) ports.ThemeProvider {
-		switch name {
-		case "flair":
-			return theme.NewFlairThemeProvider()
-		default:
-			return theme.NewDefaultThemeProvider()
-		}
+		// All built-in flair themes are available by name
+		// The FlairThemeProvider handles theme switching via flair.Store
+		return theme.NewFlairThemeProvider()
 	})
 
 	// Execute the CLI and propagate exit code

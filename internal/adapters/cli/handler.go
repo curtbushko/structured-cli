@@ -222,6 +222,11 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 		cmd.AddCommand(buildStatsCommand(h.tracker))
 	}
 
+	// Add theme subcommand if theme provider is available
+	if h.themeProvider != nil {
+		cmd.AddCommand(buildThemeCommand(h.themeProvider))
+	}
+
 	return cmd
 }
 
@@ -313,12 +318,12 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 
 // extractedFlags holds all CLI flag values extracted from args before command execution.
 type extractedFlags struct {
-	outputJSON           bool
-	showStats            bool
-	smallFilterDisabled  bool
+	outputJSON            bool
+	showStats             bool
+	smallFilterDisabled   bool
 	successFilterDisabled bool
-	dedupDisabled        bool
-	remaining            []string
+	dedupDisabled         bool
+	remaining             []string
 }
 
 // extractFlags extracts all structured-cli flags from args and resolves their values.
