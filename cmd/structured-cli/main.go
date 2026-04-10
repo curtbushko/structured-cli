@@ -22,6 +22,7 @@ import (
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/python"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/test"
 	"github.com/curtbushko/structured-cli/internal/adapters/runner"
+	"github.com/curtbushko/structured-cli/internal/adapters/theme"
 	"github.com/curtbushko/structured-cli/internal/adapters/tracking"
 	"github.com/curtbushko/structured-cli/internal/application"
 	"github.com/curtbushko/structured-cli/internal/domain"
@@ -187,8 +188,21 @@ func run() int {
 	// Create success filter for removing passing tests from output
 	successFilter := application.NewSuccessFilterer()
 
-	// Create CLI handler (inbound adapter) with tracker, small filter, deduplicator, and success filter
-	handler := cli.NewHandlerWithSuccessFilter(execRunner, registry, tracker, smallFilter, deduper, successFilter)
+	// Create theme provider for stats rendering (flair with fallback to default)
+	themeProvider := theme.NewDefaultThemeProvider()
+
+	// Create CLI handler (inbound adapter) with tracker, small filter, deduplicator, success filter, and stats renderer
+	handler := cli.NewHandlerWithStatsRenderer(execRunner, registry, tracker, smallFilter, deduper, successFilter, nil, themeProvider)
+
+	// Set theme resolver so --theme flag selects the appropriate ThemeProvider at runtime
+	handler.SetThemeResolver(func(name string) ports.ThemeProvider {
+		switch name {
+		case "flair":
+			return theme.NewFlairThemeProvider()
+		default:
+			return theme.NewDefaultThemeProvider()
+		}
+	})
 
 	// Execute the CLI and propagate exit code
 	err := handler.Run()
