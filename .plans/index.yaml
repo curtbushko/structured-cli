@@ -1,0 +1,133 @@
+project: "structured-cli"
+current_phase: 26
+phases:
+  - id: 1
+    name: "Project Setup"
+    file: "phase-01-project-setup.md"
+    status: completed
+    progress: "4/4"
+  - id: 2
+    name: "Core Domain & Ports"
+    file: "phase-02-core-domain.md"
+    status: completed
+    progress: "7/7"
+  - id: 3
+    name: "Core Services"
+    file: "phase-03-core-services.md"
+    status: completed
+    progress: "3/3"
+  - id: 4
+    name: "Adapters - Infrastructure"
+    file: "phase-04-adapters-infrastructure.md"
+    status: completed
+    progress: "4/4"
+  - id: 5
+    name: "Adapters - CLI Handler"
+    file: "phase-05-adapters-cli.md"
+    status: completed
+    progress: "5/5"
+  - id: 6
+    name: "Git Parsers"
+    file: "phase-06-git-parsers.md"
+    status: completed
+    progress: "12/12"
+  - id: 7
+    name: "Go Parsers"
+    file: "phase-07-go-parsers.md"
+    status: completed
+    progress: "8/8"
+  - id: 8
+    name: "Build Tool Parsers"
+    file: "phase-08-build-parsers.md"
+    status: completed
+    progress: "5/5"
+  - id: 9
+    name: "Linter Parsers"
+    file: "phase-09-linter-parsers.md"
+    status: completed
+    progress: "6/6"
+  - id: 10
+    name: "Test Runner Parsers"
+    file: "phase-10-test-runner-parsers.md"
+    status: completed
+    progress: "5/5"
+  - id: 11
+    name: "Schema Validation & Error Handling"
+    file: "phase-11-schema-validation.md"
+    status: completed
+    progress: "5/5"
+  - id: 12
+    name: "NPM Parsers"
+    file: "phase-12-npm-parsers.md"
+    status: completed
+    progress: "7/7"
+  - id: 13
+    name: "Docker Parsers"
+    file: "phase-13-docker-parsers.md"
+    status: completed
+    progress: "10/10"
+  - id: 14
+    name: "Python Parsers"
+    file: "phase-14-python-parsers.md"
+    status: completed
+    progress: "5/5"
+  - id: 15
+    name: "Cargo (Rust) Parsers"
+    file: "phase-15-cargo-parsers.md"
+    status: completed
+    progress: "9/9"
+  - id: 16
+    name: "Make/Just Parsers"
+    file: "phase-16-make-just-parsers.md"
+    status: completed
+    progress: "2/2"
+  - id: 17
+    name: "File Operations Parsers"
+    file: "phase-17-file-operations.md"
+    status: completed
+    progress: "10/10"
+  - id: 18
+    name: "Polish & Release"
+    file: "phase-18-polish-release.md"
+    status: completed
+    progress: "2/2"
+  - id: 19
+    name: "End-to-End BDD Tests"
+    file: "phase-19-e2e-tests.md"
+    status: completed
+    progress: "42/42"
+  - id: 20
+    name: "SQLite Usage Tracking System"
+    file: "phase-20-tracking-system.md"
+    status: completed
+    progress: "22/22"
+  - id: 21
+    name: "Output Deduplication System"
+    file: "phase-21-deduplication.md"
+    status: completed
+    progress: "20/20"
+  - id: 22
+    name: "Success Message Filter"
+    file: "phase-22-success-filter.md"
+    status: completed
+    progress: "24/24"
+  - id: 23
+    name: "Small Output Filter"
+    file: "phase-23-small-filter.md"
+    status: completed
+    progress: "32/32"
+  - id: 24
+    name: "GitHub CLI (gh) Parsers"
+    file: "phase-24-gh-parsers.md"
+    status: completed
+    progress: "12/12"
+  - id: 25
+    name: "Kubernetes (kubectl) Parsers"
+    file: "phase-25-kubectl-parsers.md"
+    status: completed
+    progress: "12/12"
+  - id: 26
+    name: "Helm Parsers"
+    file: "phase-26-helm-parsers.md"
+    status: completed
+    progress: "8/8"
