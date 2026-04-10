@@ -311,6 +311,43 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 	return h.ExecuteWithArgsAndEnv(ctx, args, envJSON, envDisableFilter, out)
 }
 
+// extractedFlags holds all CLI flag values extracted from args before command execution.
+type extractedFlags struct {
+	outputJSON           bool
+	showStats            bool
+	smallFilterDisabled  bool
+	successFilterDisabled bool
+	dedupDisabled        bool
+	remaining            []string
+}
+
+// extractFlags extracts all structured-cli flags from args and resolves their values.
+// It also resolves the theme provider if a --theme flag and resolver are configured.
+func (h *Handler) extractFlags(args []string, envJSON, envDisableFilter string) extractedFlags {
+	jsonFlag, remaining := ExtractJSONFlag(args)
+	outputJSON := ShouldOutputJSON(jsonFlag, envJSON)
+
+	showStats, remaining := ExtractStatsFlag(remaining)
+
+	themeName, remaining := ExtractThemeFlag(remaining)
+	if themeName != "" && h.themeResolver != nil {
+		if resolved := h.themeResolver(themeName); resolved != nil {
+			h.themeProvider = resolved
+		}
+	}
+
+	disableFilters, remaining := ExtractDisableFilter(remaining)
+
+	return extractedFlags{
+		outputJSON:            outputJSON,
+		showStats:             showStats,
+		smallFilterDisabled:   ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter),
+		successFilterDisabled: ShouldDisableFilter(FilterNameSuccess, disableFilters, envDisableFilter),
+		dedupDisabled:         ShouldDisableFilter(FilterNameDedupe, disableFilters, envDisableFilter),
+		remaining:             remaining,
+	}
+}
+
 // ExecuteWithArgsAndEnv runs the handler with the given arguments and environment values.
 // This variant allows explicit passing of environment values for testing.
 func (h *Handler) ExecuteWithArgsAndEnv(
@@ -320,28 +357,13 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 	envDisableFilter string,
 	out io.Writer,
 ) error {
-	// Extract --json flag and determine output mode
-	jsonFlag, remaining := ExtractJSONFlag(args)
-	outputJSON := ShouldOutputJSON(jsonFlag, envJSON)
-
-	// Extract --stats flag
-	showStats, remaining := ExtractStatsFlag(remaining)
-
-	// Extract --theme flag and resolve theme provider if a resolver is configured
-	themeName, remaining := ExtractThemeFlag(remaining)
-	if themeName != "" && h.themeResolver != nil {
-		if resolved := h.themeResolver(themeName); resolved != nil {
-			h.themeProvider = resolved
-		}
-	}
-
-	// Extract --disable-filter flag
-	disableFilters, remaining := ExtractDisableFilter(remaining)
-
-	// Determine if filters should be disabled
-	smallFilterDisabled := ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter)
-	successFilterDisabled := ShouldDisableFilter(FilterNameSuccess, disableFilters, envDisableFilter)
-	dedupDisabled := ShouldDisableFilter(FilterNameDedupe, disableFilters, envDisableFilter)
+	flags := h.extractFlags(args, envJSON, envDisableFilter)
+	outputJSON := flags.outputJSON
+	showStats := flags.showStats
+	remaining := flags.remaining
+	smallFilterDisabled := flags.smallFilterDisabled
+	successFilterDisabled := flags.successFilterDisabled
+	dedupDisabled := flags.dedupDisabled
 
 	// Parse args into Command
 	if len(remaining) == 0 {
