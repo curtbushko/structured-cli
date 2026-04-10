@@ -65,21 +65,7 @@ tasks:
   lint:ai:
     desc: Run go-ai-lint with all analyzers
     cmds:
-      - >-
-        go-ai-lint
-        -concurrencylint
-        -contextlint
-        -deferlint
-        -errorlint
-        -goroutinelint
-        -initlint
-        -interfacelint
-        -naminglint
-        -optionlint
-        -paniclint
-        -slicemaplint
-        -stringlint
-        ./...
+      - go-ai-lint ./...
 
   test:
     desc: Run go tests
