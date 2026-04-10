@@ -19,11 +19,6 @@ import (
 	"github.com/curtbushko/structured-cli/internal/ports"
 )
 
-// ThemeResolver resolves a theme name to a ThemeProvider at runtime.
-// This allows the --theme flag value to select the appropriate theme
-// without the handler depending on adapter-level theme implementations.
-type ThemeResolver func(name string) ports.ThemeProvider
-
 // Handler manages CLI interactions using cobra.
 // It coordinates between user input, command execution, and output formatting.
 type Handler struct {
@@ -33,9 +28,7 @@ type Handler struct {
 	smallFilter   ports.SmallOutputFilter
 	deduplicator  ports.Deduplicator
 	successFilter ports.SuccessFilter
-	statsRenderer ports.StatsRenderer
 	themeProvider ports.ThemeProvider
-	themeResolver ThemeResolver
 	rootCmd       *cobra.Command
 }
 
@@ -131,34 +124,6 @@ func NewHandlerWithSuccessFilter(
 	return h
 }
 
-// NewHandlerWithStatsRenderer creates a new CLI Handler with enhanced stats rendering support.
-// The statsRenderer renders post-execution statistics when --stats flag is set.
-// The themeProvider selects colors for the stats output.
-// If either is nil, stats rendering is disabled.
-func NewHandlerWithStatsRenderer(
-	runner ports.CommandRunner,
-	registry ports.ParserRegistry,
-	tracker ports.Tracker,
-	smallFilter ports.SmallOutputFilter,
-	deduplicator ports.Deduplicator,
-	successFilter ports.SuccessFilter,
-	statsRenderer ports.StatsRenderer,
-	themeProvider ports.ThemeProvider,
-) *Handler {
-	h := &Handler{
-		runner:        runner,
-		registry:      registry,
-		tracker:       tracker,
-		smallFilter:   smallFilter,
-		deduplicator:  deduplicator,
-		successFilter: successFilter,
-		statsRenderer: statsRenderer,
-		themeProvider: themeProvider,
-	}
-	h.rootCmd = h.buildRootCommand()
-	return h
-}
-
 // Runner returns the CommandRunner used by this handler.
 func (h *Handler) Runner() ports.CommandRunner {
 	return h.runner
@@ -174,12 +139,11 @@ func (h *Handler) RootCommand() *cobra.Command {
 	return h.rootCmd
 }
 
-// SetThemeResolver sets a function that resolves a theme name to a ThemeProvider.
-// When a --theme flag is provided at runtime, the resolver selects the appropriate
-// theme. If no resolver is set, the handler uses the ThemeProvider injected at
-// construction time.
-func (h *Handler) SetThemeResolver(resolver ThemeResolver) {
-	h.themeResolver = resolver
+// SetThemeProvider sets the theme provider for the theme subcommand.
+func (h *Handler) SetThemeProvider(provider ports.ThemeProvider) {
+	h.themeProvider = provider
+	// Rebuild root command to include the theme subcommand
+	h.rootCmd = h.buildRootCommand()
 }
 
 // buildRootCommand creates the cobra root command configuration.
@@ -319,7 +283,6 @@ func (h *Handler) ExecuteWithArgs(ctx context.Context, args []string, envJSON st
 // extractedFlags holds all CLI flag values extracted from args before command execution.
 type extractedFlags struct {
 	outputJSON            bool
-	showStats             bool
 	smallFilterDisabled   bool
 	successFilterDisabled bool
 	dedupDisabled         bool
@@ -327,25 +290,14 @@ type extractedFlags struct {
 }
 
 // extractFlags extracts all structured-cli flags from args and resolves their values.
-// It also resolves the theme provider if a --theme flag and resolver are configured.
 func (h *Handler) extractFlags(args []string, envJSON, envDisableFilter string) extractedFlags {
 	jsonFlag, remaining := ExtractJSONFlag(args)
 	outputJSON := ShouldOutputJSON(jsonFlag, envJSON)
-
-	showStats, remaining := ExtractStatsFlag(remaining)
-
-	themeName, remaining := ExtractThemeFlag(remaining)
-	if themeName != "" && h.themeResolver != nil {
-		if resolved := h.themeResolver(themeName); resolved != nil {
-			h.themeProvider = resolved
-		}
-	}
 
 	disableFilters, remaining := ExtractDisableFilter(remaining)
 
 	return extractedFlags{
 		outputJSON:            outputJSON,
-		showStats:             showStats,
 		smallFilterDisabled:   ShouldDisableFilter(FilterNameSmall, disableFilters, envDisableFilter),
 		successFilterDisabled: ShouldDisableFilter(FilterNameSuccess, disableFilters, envDisableFilter),
 		dedupDisabled:         ShouldDisableFilter(FilterNameDedupe, disableFilters, envDisableFilter),
@@ -364,7 +316,6 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 ) error {
 	flags := h.extractFlags(args, envJSON, envDisableFilter)
 	outputJSON := flags.outputJSON
-	showStats := flags.showStats
 	remaining := flags.remaining
 	smallFilterDisabled := flags.smallFilterDisabled
 	successFilterDisabled := flags.successFilterDisabled
@@ -449,11 +400,6 @@ func (h *Handler) ExecuteWithArgsAndEnv(
 	// Write output based on mode
 	if err := h.writeOutputWithStats(out, outputJSON, result, schema, successStats, dedupStats); err != nil {
 		return err
-	}
-
-	// Render enhanced stats if --stats flag was set and renderer is available
-	if showStats && h.statsRenderer != nil && h.tracker != nil {
-		h.renderPostExecutionStats(ctx, out)
 	}
 
 	// Propagate non-zero exit code as an ExitError
