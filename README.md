@@ -8,6 +8,8 @@ A universal CLI wrapper that transforms raw CLI output into structured JSON. Bui
 - **92 JSON Schemas** - Documented, validated output formats
 - **Drop-in Replacement** - Use as an alias without breaking existing workflows
 - **Token Efficient** - Up to 95% reduction in tokens vs raw output
+- **Rich Theming** - 180+ built-in themes powered by [Flair](https://github.com/curtbushko/flair)
+- **Enhanced Stats** - Visualize token savings with tables, progress bars, and sparklines
 - **Exit Code Propagation** - Preserves underlying command exit codes
 
 ## Installation
@@ -289,6 +291,46 @@ $ structured-cli pytest tests/ --json
 # Environment variable
 STRUCTURED_CLI_DISABLE_FILTER=small,dedupe
 ```
+
+## Themes
+
+structured-cli uses [Flair](https://github.com/curtbushko/flair) for consistent, beautiful theming across all output. Flair is a zero-config theme management system that provides 180+ curated terminal color schemes.
+
+### Available Themes
+
+```bash
+# List all available themes
+$ structured-cli theme list
+
+# Sample themes: dracula, gruvbox-dark, tokyo-night, catppuccin-mocha, nord, etc.
+```
+
+### Select a Theme
+
+```bash
+# Select your preferred theme
+$ structured-cli theme select dracula
+
+# Theme persists across all structured-cli commands
+```
+
+### Enhanced Stats Output
+
+Use the `--stats` flag with `--theme` to visualize token savings:
+
+```bash
+# Show enhanced stats after command execution
+$ structured-cli git status --json --stats
+
+# Use a specific theme for stats rendering
+$ structured-cli git status --json --stats --theme=gruvbox-dark
+```
+
+The stats output includes:
+- **Token compression** - Before/after token counts with percentage saved
+- **Visual progress bars** - Color-coded savings (green >50%, yellow 20-50%, red <20%)
+- **Historical sparklines** - Trends over recent commands
+- **Compression gauges** - Real-time compression ratio visualization
 
 ## Usage Statistics
 
