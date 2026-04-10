@@ -43,3 +43,4 @@ structured-cli/
 .go-arch-lint.yml
 .go-ai-lint.yml
 .trash/
+structured-cli
