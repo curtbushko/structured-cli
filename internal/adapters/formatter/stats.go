@@ -2,9 +2,11 @@ package formatter
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 
 	"github.com/curtbushko/structured-cli/internal/domain"
 	"github.com/curtbushko/structured-cli/internal/ports"
@@ -110,10 +112,6 @@ func (f *StatsFormatter) RenderCommandTable(commands []domain.AggregatedCommandS
 	sectionHeader := headerStyle.Render("By Command")
 	separator := strings.Repeat("─", f.width)
 
-	// Table header
-	tableHeader := fmt.Sprintf("%-3s %-*s %6s %8s %6s %7s  %-*s",
-		"#", commandColWidth, "Command", "Count", "Saved", "Avg%", "Time", impactBarWidth, "Impact")
-
 	// Apply viewport: limit visible rows when command count exceeds threshold
 	visibleCommands := commands
 	hasMore := false
@@ -124,27 +122,37 @@ func (f *StatsFormatter) RenderCommandTable(commands []domain.AggregatedCommandS
 		remaining = len(commands) - viewportThreshold
 	}
 
-	// Table rows
-	rows := make([]string, 0, len(visibleCommands))
+	// Build table using lipgloss/table for proper column alignment
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(labelColor)).
+		BorderTop(false).
+		BorderBottom(false).
+		BorderLeft(false).
+		BorderRight(false).
+		BorderColumn(true).
+		BorderHeader(true).
+		Headers("#", "Command", "Count", "Saved", "Avg%", "Time", "Impact")
+
+	// Add rows
 	for i, cmd := range visibleCommands {
 		truncated := TruncateCommand(cmd.CommandName, commandColWidth)
 		bar := renderImpactBar(cmd.ImpactPercent, f.theme)
-		row := fmt.Sprintf("%-3d %-*s %6d %8s %5.1f%% %7s  %-*s",
-			i+1,
-			commandColWidth, truncated,
-			cmd.Count,
+		t.Row(
+			strconv.Itoa(i+1),
+			truncated,
+			strconv.Itoa(cmd.Count),
 			FormatLargeNumber(cmd.TotalTokensSaved),
-			cmd.AvgSavingsPercent,
+			fmt.Sprintf("%.1f%%", cmd.AvgSavingsPercent),
 			FormatDuration(cmd.AvgExecutionTime),
-			impactBarWidth, bar)
-		rows = append(rows, row)
+			bar,
+		)
 	}
 
 	parts := []string{
 		sectionHeader,
 		separator,
-		tableHeader,
-		strings.Join(rows, "\n"),
+		t.Render(),
 	}
 
 	// Add scroll indicator when viewport is active
