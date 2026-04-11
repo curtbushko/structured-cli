@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -58,7 +59,7 @@ type statsJSONFilterItem struct {
 }
 
 // buildStatsCommand creates the stats subcommand for the CLI.
-func buildStatsCommand(reader ports.TrackingReader) *cobra.Command {
+func buildStatsCommand(reader ports.TrackingReader, sf ports.StatsFormatter) *cobra.Command {
 	flags := statsFlags{}
 
 	cmd := &cobra.Command{
@@ -72,7 +73,7 @@ Use flags to customize the output.`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return executeStatsCommand(cmd.Context(), reader, flags, cmd.OutOrStdout())
+			return executeStatsCommand(cmd.Context(), reader, flags, cmd.OutOrStdout(), sf)
 		},
 	}
 
@@ -89,7 +90,7 @@ Use flags to customize the output.`,
 }
 
 // executeStatsCommand runs the stats command with the given flags.
-func executeStatsCommand(ctx context.Context, reader ports.TrackingReader, flags statsFlags, out io.Writer) error {
+func executeStatsCommand(ctx context.Context, reader ports.TrackingReader, flags statsFlags, out io.Writer, sf ports.StatsFormatter) error {
 	// Handle history output (history > 0 means enabled)
 	if flags.history > 0 {
 		return executeHistoryStats(ctx, reader, flags, out)
@@ -106,11 +107,11 @@ func executeStatsCommand(ctx context.Context, reader ports.TrackingReader, flags
 	}
 
 	// Default: summary stats
-	return executeSummaryStats(ctx, reader, flags, out)
+	return executeSummaryStats(ctx, reader, flags, out, sf)
 }
 
 // executeSummaryStats outputs the summary statistics.
-func executeSummaryStats(ctx context.Context, reader ports.TrackingReader, flags statsFlags, out io.Writer) error {
+func executeSummaryStats(ctx context.Context, reader ports.TrackingReader, flags statsFlags, out io.Writer, sf ports.StatsFormatter) error {
 	opts := ports.StatsOptions{}
 
 	// If --project flag is set, use current working directory
@@ -131,7 +132,116 @@ func executeSummaryStats(ctx context.Context, reader ports.TrackingReader, flags
 		return writeSummaryJSON(out, summary)
 	}
 
+	// Use new formatter if available, fall back to plain text otherwise
+	if sf != nil {
+		return writeSummaryFormatted(ctx, reader, out, summary, sf)
+	}
+
 	return writeSummaryText(out, summary)
+}
+
+// writeSummaryFormatted writes the summary using the StatsFormatter port with styled output.
+func writeSummaryFormatted(ctx context.Context, reader ports.TrackingReader, out io.Writer, summary domain.StatsSummary, sf ports.StatsFormatter) error {
+	// Get history for aggregation and sparkline trend data
+	history, err := reader.History(ctx, 0)
+	if err != nil {
+		// If we can't get history, still render header and summary
+		history = nil
+	}
+
+	// Set savings trend from history for sparkline
+	if len(history) > 0 {
+		trend := make([]int, len(history))
+		for i, rec := range history {
+			trend[i] = rec.TokensSaved
+		}
+		sf.SetSavingsTrend(trend)
+	}
+
+	// Render header
+	_, err = fmt.Fprintln(out, sf.RenderHeader())
+	if err != nil {
+		return err
+	}
+
+	// Render summary
+	_, err = fmt.Fprintln(out, sf.RenderSummary(summary))
+	if err != nil {
+		return err
+	}
+
+	// Aggregate commands from history and render command table
+	if len(history) > 0 {
+		aggregated := aggregateCommands(history)
+		aggregated = domain.CalculateImpact(aggregated)
+		table := sf.RenderCommandTable(aggregated)
+		if table != "" {
+			_, err = fmt.Fprintln(out, table)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// aggregateCommands groups command records by normalized name and computes aggregate metrics.
+// Records are sorted by total tokens saved descending.
+func aggregateCommands(records []domain.CommandRecord) []domain.AggregatedCommandStats {
+	if len(records) == 0 {
+		return nil
+	}
+
+	type accumulator struct {
+		count          int
+		totalSaved     int
+		totalPercent   float64
+		totalExecNanos int64
+	}
+
+	groups := make(map[string]*accumulator)
+	var order []string
+
+	for _, rec := range records {
+		// Build full command string and normalize
+		cmdStr := formatCommandString(rec.Command, rec.Subcommands)
+		normalized := domain.NormalizeCommandName(cmdStr)
+
+		acc, exists := groups[normalized]
+		if !exists {
+			acc = &accumulator{}
+			groups[normalized] = acc
+			order = append(order, normalized)
+		}
+
+		acc.count++
+		acc.totalSaved += rec.TokensSaved
+		acc.totalPercent += rec.SavingsPercent
+		acc.totalExecNanos += rec.ExecutionTime.Nanoseconds()
+	}
+
+	result := make([]domain.AggregatedCommandStats, 0, len(groups))
+	for _, name := range order {
+		acc := groups[name]
+		avgPercent := acc.totalPercent / float64(acc.count)
+		avgExec := time.Duration(acc.totalExecNanos / int64(acc.count))
+
+		result = append(result, domain.NewAggregatedCommandStats(
+			name,
+			acc.count,
+			acc.totalSaved,
+			avgPercent,
+			avgExec,
+		))
+	}
+
+	// Sort by total tokens saved descending
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].TotalTokensSaved > result[j].TotalTokensSaved
+	})
+
+	return result
 }
 
 // writeSummaryJSON writes the summary as JSON.
@@ -148,7 +258,7 @@ func writeSummaryJSON(out io.Writer, summary domain.StatsSummary) error {
 	return enc.Encode(output)
 }
 
-// writeSummaryText writes the summary as formatted text.
+// writeSummaryText writes the summary as formatted text (fallback when no theme is available).
 func writeSummaryText(out io.Writer, summary domain.StatsSummary) error {
 	_, err := fmt.Fprintf(out, "Structured CLI Usage Statistics\n")
 	if err != nil {

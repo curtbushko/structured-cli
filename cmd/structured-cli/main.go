@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/curtbushko/structured-cli/internal/adapters/cli"
+	"github.com/curtbushko/structured-cli/internal/adapters/formatter"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/build"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/cargo"
 	"github.com/curtbushko/structured-cli/internal/adapters/parsers/docker"
@@ -192,7 +193,11 @@ func run() int {
 	handler := cli.NewHandlerWithSuccessFilter(execRunner, registry, tracker, smallFilter, deduper, successFilter)
 
 	// Wire theme provider for theme subcommand (uses flair for built-in themes)
-	handler.SetThemeProvider(theme.NewFlairThemeProvider())
+	themeProvider := theme.NewFlairThemeProvider()
+	handler.SetThemeProvider(themeProvider)
+
+	// Wire stats formatter with theme for styled summary output
+	handler.SetStatsFormatter(formatter.NewStatsFormatter(0, themeProvider))
 
 	// Execute the CLI and propagate exit code
 	err := handler.Run()

@@ -39,6 +39,32 @@ func (p *DefaultThemeProvider) ColorFor(category domain.SavingsCategory) string 
 	}
 }
 
+// EfficiencyColorFor returns the ANSI color for the given efficiency percentage.
+// Thresholds: >80% = good, >50% = warning, <=50% = critical.
+func (p *DefaultThemeProvider) EfficiencyColorFor(percent float64) string {
+	switch {
+	case percent > 80.0:
+		return p.ColorFor(domain.SavingsCategoryGood)
+	case percent > 50.0:
+		return p.ColorFor(domain.SavingsCategoryWarning)
+	default:
+		return p.ColorFor(domain.SavingsCategoryCritical)
+	}
+}
+
+// ImpactGradientColor returns the ANSI color for the given impact percentage.
+// Gradient: >70% = good, >30% = warning, <=30% = critical.
+func (p *DefaultThemeProvider) ImpactGradientColor(impact float64) string {
+	switch {
+	case impact > 70.0:
+		return p.ColorFor(domain.SavingsCategoryGood)
+	case impact > 30.0:
+		return p.ColorFor(domain.SavingsCategoryWarning)
+	default:
+		return p.ColorFor(domain.SavingsCategoryCritical)
+	}
+}
+
 // Name returns the name of this theme.
 func (p *DefaultThemeProvider) Name() string {
 	return "default"

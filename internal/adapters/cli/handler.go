@@ -22,14 +22,15 @@ import (
 // Handler manages CLI interactions using cobra.
 // It coordinates between user input, command execution, and output formatting.
 type Handler struct {
-	runner        ports.CommandRunner
-	registry      ports.ParserRegistry
-	tracker       ports.Tracker
-	smallFilter   ports.SmallOutputFilter
-	deduplicator  ports.Deduplicator
-	successFilter ports.SuccessFilter
-	themeProvider ports.ThemeProvider
-	rootCmd       *cobra.Command
+	runner         ports.CommandRunner
+	registry       ports.ParserRegistry
+	tracker        ports.Tracker
+	smallFilter    ports.SmallOutputFilter
+	deduplicator   ports.Deduplicator
+	successFilter  ports.SuccessFilter
+	themeProvider  ports.ThemeProvider
+	statsFormatter ports.StatsFormatter
+	rootCmd        *cobra.Command
 }
 
 // NewHandler creates a new CLI Handler with the given dependencies.
@@ -146,6 +147,13 @@ func (h *Handler) SetThemeProvider(provider ports.ThemeProvider) {
 	h.rootCmd = h.buildRootCommand()
 }
 
+// SetStatsFormatter sets the stats formatter for the stats subcommand.
+func (h *Handler) SetStatsFormatter(sf ports.StatsFormatter) {
+	h.statsFormatter = sf
+	// Rebuild root command to include the formatted stats subcommand
+	h.rootCmd = h.buildRootCommand()
+}
+
 // buildRootCommand creates the cobra root command configuration.
 func (h *Handler) buildRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -183,7 +191,7 @@ Use --json flag or set STRUCTURED_CLI_JSON=true for JSON output.`,
 
 	// Add stats subcommand if tracker is available
 	if h.tracker != nil {
-		cmd.AddCommand(buildStatsCommand(h.tracker))
+		cmd.AddCommand(buildStatsCommand(h.tracker, h.statsFormatter))
 	}
 
 	// Add theme subcommand if theme provider is available

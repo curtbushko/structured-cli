@@ -1,5 +1,5 @@
 project: "structured-cli"
-current_phase: 27
+current_phase: 28
 phases:
   - id: 1
     name: "Project Setup"
@@ -136,3 +136,8 @@ phases:
     file: "phase-27-enhanced-stats.md"
     status: completed
     progress: "5/5"
+  - id: 28
+    name: "Stats Output - Aggregated Summary Format"
+    file: "phase-28-stats-summary-format.md"
+    status: completed
+    progress: "43/43"

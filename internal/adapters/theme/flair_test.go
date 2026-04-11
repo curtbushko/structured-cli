@@ -76,3 +76,99 @@ func TestFlairThemeProvider_ColorFor_DistinctValues(t *testing.T) {
 	assert.NotEqual(t, warning, critical, "Warning and Critical should have distinct colors")
 	assert.NotEqual(t, good, critical, "Good and Critical should have distinct colors")
 }
+
+func TestFlairThemeProvider_EfficiencyColorFor_Success(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get efficiency color for 85%
+	color := provider.EfficiencyColorFor(85.0)
+
+	// then: returns flair success color (same as ColorFor Good)
+	expected := provider.ColorFor(domain.SavingsCategoryGood)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_EfficiencyColorFor_Warning(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get efficiency color for 65%
+	color := provider.EfficiencyColorFor(65.0)
+
+	// then: returns flair warning color
+	expected := provider.ColorFor(domain.SavingsCategoryWarning)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_EfficiencyColorFor_Error(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get efficiency color for 40%
+	color := provider.EfficiencyColorFor(40.0)
+
+	// then: returns flair error color
+	expected := provider.ColorFor(domain.SavingsCategoryCritical)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_EfficiencyColorFor_Boundary80(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get efficiency color for exactly 80%
+	color := provider.EfficiencyColorFor(80.0)
+
+	// then: returns warning (80 is not > 80)
+	expected := provider.ColorFor(domain.SavingsCategoryWarning)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_EfficiencyColorFor_Boundary50(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get efficiency color for exactly 50%
+	color := provider.EfficiencyColorFor(50.0)
+
+	// then: returns critical (50 is not > 50)
+	expected := provider.ColorFor(domain.SavingsCategoryCritical)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_ImpactGradientColor_FullBar(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get gradient color for impact=100%
+	color := provider.ImpactGradientColor(100.0)
+
+	// then: returns flair success color
+	expected := provider.ColorFor(domain.SavingsCategoryGood)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_ImpactGradientColor_MidBar(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get gradient color for impact=50%
+	color := provider.ImpactGradientColor(50.0)
+
+	// then: returns flair warning color
+	expected := provider.ColorFor(domain.SavingsCategoryWarning)
+	assert.Equal(t, expected, color)
+}
+
+func TestFlairThemeProvider_ImpactGradientColor_LowBar(t *testing.T) {
+	// given: FlairThemeProvider with flair theme
+	provider := NewFlairThemeProvider()
+
+	// when: get gradient color for impact=10%
+	color := provider.ImpactGradientColor(10.0)
+
+	// then: returns flair error color
+	expected := provider.ColorFor(domain.SavingsCategoryCritical)
+	assert.Equal(t, expected, color)
+}

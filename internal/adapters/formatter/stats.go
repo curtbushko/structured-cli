@@ -37,6 +37,12 @@ const (
 	impactGoodThreshold = 70.0
 	// impactWarningThreshold is the percentage above which impact is "warning".
 	impactWarningThreshold = 30.0
+
+	// viewportThreshold is the max commands shown before enabling viewport scrolling.
+	viewportThreshold = 10
+
+	// scrollIndicator is shown when the command table has more rows than viewportThreshold.
+	scrollIndicator = "  ▼ ... and %d more commands"
 )
 
 // Adaptive colors for light/dark terminal support.
@@ -50,8 +56,9 @@ var (
 // It uses lipgloss for styling with rounded borders and adaptive colors,
 // and a ThemeProvider for category-based color tokens (success/warning/error).
 type StatsFormatter struct {
-	width int
-	theme ports.ThemeProvider
+	width        int
+	theme        ports.ThemeProvider
+	savingsTrend []int
 }
 
 // NewStatsFormatter creates a new StatsFormatter with the given terminal width and theme provider.
@@ -61,6 +68,11 @@ func NewStatsFormatter(width int, theme ports.ThemeProvider) *StatsFormatter {
 		width = defaultWidth
 	}
 	return &StatsFormatter{width: width, theme: theme}
+}
+
+// SetSavingsTrend sets the token savings trend data used to render a sparkline in the summary.
+func (f *StatsFormatter) SetSavingsTrend(values []int) {
+	f.savingsTrend = values
 }
 
 // RenderHeader renders the header section with title and box-drawing separator.
@@ -118,6 +130,13 @@ func (f *StatsFormatter) RenderSummary(summary domain.StatsSummary) string {
 		labelStyle.Render("Efficiency:"),
 		meter))
 
+	// Add sparkline for token savings trend if data is available
+	if sparkline := RenderSparklineWithColor(f.savingsTrend, f.theme); sparkline != "" {
+		lines = append(lines, fmt.Sprintf("  %s  %s",
+			labelStyle.Render("Trend:"),
+			sparkline))
+	}
+
 	content := strings.Join(lines, "\n")
 
 	borderStyle := lipgloss.NewStyle().
@@ -147,9 +166,19 @@ func (f *StatsFormatter) RenderCommandTable(commands []domain.AggregatedCommandS
 	tableHeader := fmt.Sprintf("  %-3s %-*s %6s %8s %6s %7s  %-*s",
 		"#", commandColWidth, "Command", "Count", "Saved", "Avg%", "Time", impactBarWidth, "Impact")
 
+	// Apply viewport: limit visible rows when command count exceeds threshold
+	visibleCommands := commands
+	hasMore := false
+	remaining := 0
+	if len(commands) > viewportThreshold {
+		visibleCommands = commands[:viewportThreshold]
+		hasMore = true
+		remaining = len(commands) - viewportThreshold
+	}
+
 	// Table rows
-	rows := make([]string, 0, len(commands))
-	for i, cmd := range commands {
+	rows := make([]string, 0, len(visibleCommands))
+	for i, cmd := range visibleCommands {
 		truncated := TruncateCommand(cmd.CommandName, commandColWidth)
 		bar := renderImpactBar(cmd.ImpactPercent, f.theme)
 		row := fmt.Sprintf("  %-3d %-*s %6d %8s %5.1f%% %7s  %s",
@@ -163,12 +192,19 @@ func (f *StatsFormatter) RenderCommandTable(commands []domain.AggregatedCommandS
 		rows = append(rows, row)
 	}
 
-	content := strings.Join([]string{
+	parts := []string{
 		sectionHeader,
 		separator,
 		tableHeader,
 		strings.Join(rows, "\n"),
-	}, "\n")
+	}
+
+	// Add scroll indicator when viewport is active
+	if hasMore {
+		parts = append(parts, fmt.Sprintf(scrollIndicator, remaining))
+	}
+
+	content := strings.Join(parts, "\n")
 
 	borderStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

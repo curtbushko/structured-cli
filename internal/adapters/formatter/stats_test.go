@@ -1,6 +1,7 @@
 package formatter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -352,4 +353,125 @@ func TestNewStatsFormatter_DefaultWidth(t *testing.T) {
 	require.NotNil(t, f)
 	result := f.RenderHeader()
 	assert.Contains(t, result, "Token Savings")
+}
+
+func TestStatsFormatter_RenderCommandTable_ViewportEnabledWhenManyCommands(t *testing.T) {
+	// given: a StatsFormatter with 15 commands (over the viewport threshold)
+	f := NewStatsFormatter(80, newTestTheme())
+	commands := make([]domain.AggregatedCommandStats, 15)
+	for i := range commands {
+		commands[i] = domain.NewAggregatedCommandStats(
+			fmt.Sprintf("cmd-%d", i+1), i+1, (i+1)*1000, 50.0, 100*time.Millisecond,
+		)
+	}
+	commands = domain.CalculateImpact(commands)
+
+	// when: rendering the command table
+	result := f.RenderCommandTable(commands)
+
+	// then: viewport is enabled, only first 10 commands shown
+	assert.Contains(t, result, "cmd-1")
+	assert.Contains(t, result, "cmd-10")
+	assert.NotContains(t, result, "cmd-11")
+	// Scroll indicator shown at bottom
+	assert.Contains(t, result, "▼")
+}
+
+func TestStatsFormatter_RenderCommandTable_ViewportDisabledWhenFewCommands(t *testing.T) {
+	// given: a StatsFormatter with 5 commands (under the viewport threshold)
+	f := NewStatsFormatter(80, newTestTheme())
+	commands := make([]domain.AggregatedCommandStats, 5)
+	for i := range commands {
+		commands[i] = domain.NewAggregatedCommandStats(
+			fmt.Sprintf("cmd-%d", i+1), i+1, (i+1)*1000, 50.0, 100*time.Millisecond,
+		)
+	}
+	commands = domain.CalculateImpact(commands)
+
+	// when: rendering the command table
+	result := f.RenderCommandTable(commands)
+
+	// then: all 5 commands shown, no scroll indicator
+	assert.Contains(t, result, "cmd-1")
+	assert.Contains(t, result, "cmd-5")
+	assert.NotContains(t, result, "▼")
+}
+
+func TestStatsFormatter_RenderCommandTable_ViewportExactlyAtThreshold(t *testing.T) {
+	// given: exactly 10 commands (at threshold)
+	f := NewStatsFormatter(80, newTestTheme())
+	commands := make([]domain.AggregatedCommandStats, 10)
+	for i := range commands {
+		commands[i] = domain.NewAggregatedCommandStats(
+			fmt.Sprintf("cmd-%d", i+1), i+1, (i+1)*1000, 50.0, 100*time.Millisecond,
+		)
+	}
+	commands = domain.CalculateImpact(commands)
+
+	// when: rendering the command table
+	result := f.RenderCommandTable(commands)
+
+	// then: all 10 commands shown, no scroll indicator
+	assert.Contains(t, result, "cmd-10")
+	assert.NotContains(t, result, "▼")
+}
+
+func TestStatsFormatter_RenderSummary_ContainsSparkline(t *testing.T) {
+	// given: a StatsFormatter with token savings trend data
+	f := NewStatsFormatter(80, newTestTheme())
+	f.SetSavingsTrend([]int{1000, 1500, 2000, 1800, 2500})
+	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
+
+	// when: rendering the summary
+	result := f.RenderSummary(summary)
+
+	// then: contains sparkline label and characters
+	assert.Contains(t, result, "Trend:")
+}
+
+func TestStatsFormatter_UsesThemeColors(t *testing.T) {
+	// given: StatsFormatter with a theme provider
+	tp := newTestTheme()
+	f := NewStatsFormatter(80, tp)
+
+	// when: mapping efficiency 85% to category and getting color
+	effCat := EfficiencyCategory(85.0)
+	color := tp.ColorFor(effCat)
+
+	// then: returns the success color from theme (not a hardcoded value)
+	assert.Equal(t, domain.SavingsCategoryGood, effCat)
+	assert.Equal(t, "#00FF00", color)
+
+	// when: mapping impact 50% to category and getting color
+	impCat := ImpactCategory(50.0)
+	impactColor := tp.ColorFor(impCat)
+
+	// then: returns the warning color from theme
+	assert.Equal(t, domain.SavingsCategoryWarning, impCat)
+	assert.Equal(t, "#FFFF00", impactColor)
+
+	// when: mapping impact 10% to category and getting color
+	lowCat := ImpactCategory(10.0)
+	lowColor := tp.ColorFor(lowCat)
+
+	// then: returns the error color from theme
+	assert.Equal(t, domain.SavingsCategoryCritical, lowCat)
+	assert.Equal(t, "#FF0000", lowColor)
+
+	// Verify formatter renders without error (integration check)
+	summary := domain.NewStatsSummary(10, 5000, 85.0, 1*time.Minute)
+	result := f.RenderSummary(summary)
+	assert.NotEmpty(t, result)
+}
+
+func TestStatsFormatter_RenderSummary_NoSparklineWhenNoTrend(t *testing.T) {
+	// given: a StatsFormatter with no trend data
+	f := NewStatsFormatter(80, newTestTheme())
+	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
+
+	// when: rendering the summary
+	result := f.RenderSummary(summary)
+
+	// then: no trend label shown
+	assert.NotContains(t, result, "Trend:")
 }

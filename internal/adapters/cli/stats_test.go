@@ -56,9 +56,9 @@ func TestStatsCommand_Summary(t *testing.T) {
 		),
 	}
 
-	// Act
+	// Act - nil theme falls back to plain text
 	var buf bytes.Buffer
-	err := executeStatsCommand(context.Background(), reader, statsFlags{}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestStatsCommand_JSON(t *testing.T) {
 
 	// Act
 	var buf bytes.Buffer
-	err := executeStatsCommand(context.Background(), reader, statsFlags{json: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{json: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestStatsCommand_History(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// history=10 means show 10 entries (default when --history is used without explicit value)
-	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 10}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 10}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestStatsCommand_HistoryLimit(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// history=20 means show 20 entries
-	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 20}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 20}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -158,7 +158,7 @@ func TestStatsCommand_ByParser(t *testing.T) {
 
 	// Act
 	var buf bytes.Buffer
-	err := executeStatsCommand(context.Background(), reader, statsFlags{byParser: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{byParser: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -178,7 +178,7 @@ func TestStatsCommand_Project(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// project=true means use current working directory
-	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ func TestStatsCommand_ProjectJSON(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// project=true means use current working directory, json=true for JSON output
-	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true, json: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true, json: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -213,7 +213,7 @@ func TestStatsCommand_EmptyDatabase(t *testing.T) {
 
 	// Act
 	var buf bytes.Buffer
-	err := executeStatsCommand(context.Background(), reader, statsFlags{}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -241,7 +241,7 @@ func TestStatsCommand_HistoryJSON(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// history=10 with json=true
-	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 10, json: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 10, json: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -261,7 +261,7 @@ func TestStatsCommand_ByParserJSON(t *testing.T) {
 
 	// Act
 	var buf bytes.Buffer
-	err := executeStatsCommand(context.Background(), reader, statsFlags{byParser: true, json: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{byParser: true, json: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestStatsCommand_ProjectUsesCurrentDir(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// When project=true, it should use the current working directory
-	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{project: true}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestStatsCommand_HistoryWithLimit(t *testing.T) {
 	// Act
 	var buf bytes.Buffer
 	// history=15 means show 15 entries
-	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 15}, &buf)
+	err := executeStatsCommand(context.Background(), reader, statsFlags{history: 15}, &buf, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -309,7 +309,7 @@ func TestBuildStatsCommand_ProjectFlag(t *testing.T) {
 		summary: domain.NewStatsSummary(25, 12500, 80.0, 2*time.Minute),
 	}
 
-	cmd := buildStatsCommand(reader)
+	cmd := buildStatsCommand(reader, nil)
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	// Use --project - should filter to current directory
@@ -330,7 +330,7 @@ func TestBuildStatsCommand_HistoryFlagNoValue(t *testing.T) {
 		history: make([]domain.CommandRecord, 5),
 	}
 
-	cmd := buildStatsCommand(reader)
+	cmd := buildStatsCommand(reader, nil)
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	// Use --history without a value - should default to 10
@@ -350,7 +350,7 @@ func TestBuildStatsCommand_HistoryFlagWithValue(t *testing.T) {
 		history: make([]domain.CommandRecord, 5),
 	}
 
-	cmd := buildStatsCommand(reader)
+	cmd := buildStatsCommand(reader, nil)
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 	// Use --history=25

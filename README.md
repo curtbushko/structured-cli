@@ -337,23 +337,34 @@ The stats output includes:
 Track command usage and token savings:
 
 ```bash
-# View summary
+# View aggregated summary (default)
 $ structured-cli stats
-Total Commands:      226
-Total Tokens Saved:  15420
-Avg Savings:         68.3%
+╭────────────────────────────────────────────────────────────────────────────╮
+│Token Savings (Global Scope)                                                │
+│════════════════════════════════════════════════════════════════════════════│
+╰────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────╮
+│  Commands:  226                                                             │
+│  Tokens Saved:  15.4K                                                       │
+│  Avg Savings:  68.3%                                                        │
+│  Total Time:  2m15s                                                         │
+│  Efficiency:  ████████████████░░░░ 80.0%                                    │
+│  Trend:  ▁▂▃▅▇█▇▅▃▂                                                        │
+╰────────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────╮
+│By Command                                                                   │
+│────────────────────────────────────────────────────────────────────────────│
+│  #   Command                    Count    Saved   Avg%    Time  Impact      │
+│  1   git status                    45    5.2K   72.1%    25s  ██████████  │
+│  2   go test                       38    4.8K   65.3%    45s  █████████░  │
+│  3   docker ps                     28    2.1K   61.2%    18s  ██████░░░░  │
+╰────────────────────────────────────────────────────────────────────────────╯
 
-# Recent history
+# Detailed command history
 $ structured-cli stats --history
 
 # JSON export
 $ structured-cli stats --json
-
-# Filter by parser
-$ structured-cli stats --by-parser
-
-# Current project only
-$ structured-cli stats --project
 ```
 
 Data stored in `~/.local/share/structured-cli/tracking.db` (SQLite).
