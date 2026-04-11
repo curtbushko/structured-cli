@@ -127,3 +127,35 @@ func TestRenderSparklineWithColor_EmptyValues(t *testing.T) {
 	// then: returns empty string
 	assert.Empty(t, result)
 }
+
+func TestGenerateSparkline_NegativeValues(t *testing.T) {
+	// given: token savings with some negative values (JSON larger than raw)
+	values := []int{-100, 0, 500, 1000}
+
+	// when: generating sparkline
+	result := GenerateSparkline(values)
+
+	// then: handles negative values by shifting range
+	runes := []rune(result)
+	require.Len(t, runes, 4)
+	// Min value (-100) should produce lowest bar
+	assert.Equal(t, ' ', runes[0], "min value should produce lowest bar")
+	// Max value (1000) should produce tallest bar
+	assert.Equal(t, '█', runes[3], "max value should produce tallest bar")
+}
+
+func TestGenerateSparkline_AllNegativeValues(t *testing.T) {
+	// given: all negative values
+	values := []int{-1000, -500, -100}
+
+	// when: generating sparkline
+	result := GenerateSparkline(values)
+
+	// then: scales correctly with -1000 as min and -100 as max
+	runes := []rune(result)
+	require.Len(t, runes, 3)
+	// Most negative should produce lowest bar
+	assert.Equal(t, ' ', runes[0], "most negative value should produce lowest bar")
+	// Least negative should produce tallest bar
+	assert.Equal(t, '█', runes[2], "least negative value should produce tallest bar")
+}

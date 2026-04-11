@@ -12,28 +12,55 @@ import (
 var sparklineChars = []rune{' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'}
 
 // GenerateSparkline creates a sparkline string from a series of integer values.
-// Each value is mapped to a Unicode block character scaled relative to the maximum value.
+// Each value is mapped to a Unicode block character scaled relative to the range.
+// Handles negative values by shifting the entire range to be positive.
 // Returns an empty string for nil or empty input.
 func GenerateSparkline(values []int) string {
 	if len(values) == 0 {
 		return ""
 	}
 
-	maxVal := 0
+	// Find min and max values
+	minVal := values[0]
+	maxVal := values[0]
 	for _, v := range values {
+		if v < minVal {
+			minVal = v
+		}
 		if v > maxVal {
 			maxVal = v
 		}
 	}
 
+	// Shift all values to be non-negative if there are negative values
+	shift := 0
+	if minVal < 0 {
+		shift = -minVal
+	}
+
+	// Calculate range
+	rangeVal := maxVal - minVal
+
 	runes := make([]rune, len(values))
 	for i, v := range values {
-		if maxVal == 0 {
-			runes[i] = sparklineChars[0] // space for all-zero case
+		if rangeVal == 0 {
+			// All values are the same - use appropriate character
+			if maxVal == 0 {
+				runes[i] = sparklineChars[0] // all zeros -> space
+			} else {
+				runes[i] = sparklineChars[len(sparklineChars)-1] // all same non-zero -> full bar
+			}
 			continue
 		}
-		// Scale value to sparkline character index (0-8)
-		idx := v * (len(sparklineChars) - 1) / maxVal
+		// Shift and scale value to sparkline character index (0-8)
+		shiftedVal := v + shift
+		idx := shiftedVal * (len(sparklineChars) - 1) / rangeVal
+		if idx < 0 {
+			idx = 0
+		}
+		if idx >= len(sparklineChars) {
+			idx = len(sparklineChars) - 1
+		}
 		runes[i] = sparklineChars[idx]
 	}
 
