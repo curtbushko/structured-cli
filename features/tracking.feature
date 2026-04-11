@@ -23,7 +23,7 @@ Feature: Usage Tracking
     Given I have a tracking database with 10 recorded commands
     When I run "structured-cli stats"
     Then the exit code should be 0
-    And the output should contain "Commands:"
+    And the output should contain "Tokens Saved:"
     And the output should contain "10"
 
   Scenario: Stats --history shows recent commands

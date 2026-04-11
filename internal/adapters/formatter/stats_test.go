@@ -2,6 +2,7 @@ package formatter
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,16 +58,16 @@ func TestStatsFormatter_RenderHeader_ContainsBoxChars(t *testing.T) {
 	assert.Contains(t, result, "═")
 }
 
-func TestStatsFormatter_RenderHeader_ContainsBorder(t *testing.T) {
+func TestStatsFormatter_RenderHeader_NoBorder(t *testing.T) {
 	// given: a StatsFormatter with width 80
 	f := NewStatsFormatter(80, newTestTheme())
 
 	// when: rendering the header
 	result := f.RenderHeader()
 
-	// then: contains rounded border characters (lipgloss rounded border uses ╭╮╰╯)
-	assert.Contains(t, result, "╭")
-	assert.Contains(t, result, "╯")
+	// then: does NOT contain border characters (lipgloss rounded border uses ╭╮╰╯)
+	assert.NotContains(t, result, "╭")
+	assert.NotContains(t, result, "╯")
 }
 
 func TestStatsFormatter_RenderSummary_ContainsFormattedNumbers(t *testing.T) {
@@ -86,43 +87,56 @@ func TestStatsFormatter_RenderSummary_ContainsFormattedNumbers(t *testing.T) {
 	assert.Contains(t, result, "27.5M")
 }
 
-func TestStatsFormatter_RenderSummary_ContainsCommands(t *testing.T) {
-	// given: a StatsFormatter and a summary
+func TestStatsFormatter_RenderSummary_OnlyTokenFields(t *testing.T) {
+	// given: a StatsFormatter and a summary with token counts
+	f := NewStatsFormatter(80, newTestTheme())
+	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
+	summary.TotalInputTokens = 50000000
+	summary.TotalOutputTokens = 22500000
+
+	// when: rendering the summary
+	result := f.RenderSummary(summary)
+
+	// then: contains only token-related labels
+	assert.Contains(t, result, "Input Tokens:")
+	assert.Contains(t, result, "Output Tokens:")
+	assert.Contains(t, result, "Tokens Saved:")
+
+	// then: does NOT contain removed labels
+	assert.NotContains(t, result, "Commands:")
+	assert.NotContains(t, result, "Avg Savings:")
+	assert.NotContains(t, result, "Total Time:")
+}
+
+func TestStatsFormatter_RenderSummary_ContainsTokensSaved(t *testing.T) {
+	// given: a StatsFormatter and a summary with tokens saved
 	f := NewStatsFormatter(80, newTestTheme())
 	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
 
 	// when: rendering the summary
 	result := f.RenderSummary(summary)
 
-	// then: contains command count
-	assert.Contains(t, result, "150")
+	// then: contains "Tokens Saved" label and formatted value
+	assert.Contains(t, result, "Tokens Saved:")
+	assert.Contains(t, result, "27.5M")
 }
 
-func TestStatsFormatter_RenderSummary_ContainsDuration(t *testing.T) {
-	// given: a StatsFormatter and a summary
+func TestStatsFormatter_RenderSummary_ContainsInputOutputTokens(t *testing.T) {
+	// given: a StatsFormatter and a summary with input/output token counts
 	f := NewStatsFormatter(80, newTestTheme())
 	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
+	summary.TotalInputTokens = 50000000
+	summary.TotalOutputTokens = 22500000
 
 	// when: rendering the summary
 	result := f.RenderSummary(summary)
 
-	// then: contains formatted duration
-	assert.Contains(t, result, "12m20s")
+	// then: contains formatted input and output token values
+	assert.Contains(t, result, "50.0M")
+	assert.Contains(t, result, "22.5M")
 }
 
-func TestStatsFormatter_RenderSummary_ContainsPercentage(t *testing.T) {
-	// given: a StatsFormatter and a summary
-	f := NewStatsFormatter(80, newTestTheme())
-	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
-
-	// when: rendering the summary
-	result := f.RenderSummary(summary)
-
-	// then: contains percentage
-	assert.Contains(t, result, "85.5%")
-}
-
-func TestStatsFormatter_RenderSummary_ContainsEfficiencyMeter(t *testing.T) {
+func TestStatsFormatter_RenderSummary_NoEfficiencyMeter(t *testing.T) {
 	// given: a StatsFormatter and a summary with high efficiency
 	f := NewStatsFormatter(80, newTestTheme())
 	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
@@ -130,11 +144,11 @@ func TestStatsFormatter_RenderSummary_ContainsEfficiencyMeter(t *testing.T) {
 	// when: rendering the summary
 	result := f.RenderSummary(summary)
 
-	// then: contains progress bar characters (filled block)
-	assert.Contains(t, result, "█")
+	// then: output does NOT contain efficiency meter or 'Efficiency:' label
+	assert.NotContains(t, result, "Efficiency:")
 }
 
-func TestStatsFormatter_RenderSummary_ContainsBorder(t *testing.T) {
+func TestStatsFormatter_RenderSummary_NoBorder(t *testing.T) {
 	// given: a StatsFormatter and a summary
 	f := NewStatsFormatter(80, newTestTheme())
 	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
@@ -142,9 +156,9 @@ func TestStatsFormatter_RenderSummary_ContainsBorder(t *testing.T) {
 	// when: rendering the summary
 	result := f.RenderSummary(summary)
 
-	// then: contains rounded border characters
-	assert.Contains(t, result, "╭")
-	assert.Contains(t, result, "╯")
+	// then: does NOT contain border characters
+	assert.NotContains(t, result, "╭")
+	assert.NotContains(t, result, "╯")
 }
 
 func TestStatsFormatter_RenderCommandTable_ContainsHeaders(t *testing.T) {
@@ -246,7 +260,7 @@ func TestStatsFormatter_RenderCommandTable_ContainsImpactBars(t *testing.T) {
 	assert.Contains(t, result, "█")
 }
 
-func TestStatsFormatter_RenderCommandTable_ContainsBorder(t *testing.T) {
+func TestStatsFormatter_RenderCommandTable_NoBorder(t *testing.T) {
 	// given: a StatsFormatter and command stats
 	f := NewStatsFormatter(80, newTestTheme())
 	commands := []domain.AggregatedCommandStats{
@@ -257,9 +271,9 @@ func TestStatsFormatter_RenderCommandTable_ContainsBorder(t *testing.T) {
 	// when: rendering the command table
 	result := f.RenderCommandTable(commands)
 
-	// then: contains rounded border characters
-	assert.Contains(t, result, "╭")
-	assert.Contains(t, result, "╯")
+	// then: does NOT contain border characters
+	assert.NotContains(t, result, "╭")
+	assert.NotContains(t, result, "╯")
 }
 
 func TestStatsFormatter_RenderCommandTable_EmptyCommands(t *testing.T) {
@@ -271,51 +285,6 @@ func TestStatsFormatter_RenderCommandTable_EmptyCommands(t *testing.T) {
 
 	// then: returns empty string
 	assert.Empty(t, result)
-}
-
-func TestEfficiencyColor_HighEfficiency(t *testing.T) {
-	// given: an efficiency percentage above 80%
-	// when: getting the color category
-	category := EfficiencyCategory(85.0)
-
-	// then: returns good (success) category
-	assert.Equal(t, domain.SavingsCategoryGood, category)
-}
-
-func TestEfficiencyColor_MediumEfficiency(t *testing.T) {
-	// given: an efficiency percentage between 50% and 80%
-	// when: getting the color category
-	category := EfficiencyCategory(65.0)
-
-	// then: returns warning category
-	assert.Equal(t, domain.SavingsCategoryWarning, category)
-}
-
-func TestEfficiencyColor_LowEfficiency(t *testing.T) {
-	// given: an efficiency percentage below 50%
-	// when: getting the color category
-	category := EfficiencyCategory(40.0)
-
-	// then: returns critical (error) category
-	assert.Equal(t, domain.SavingsCategoryCritical, category)
-}
-
-func TestEfficiencyColor_Boundary80(t *testing.T) {
-	// given: an efficiency at the 80% boundary
-	// when: getting the color category
-	category := EfficiencyCategory(80.0)
-
-	// then: returns warning (80 is not > 80)
-	assert.Equal(t, domain.SavingsCategoryWarning, category)
-}
-
-func TestEfficiencyColor_Boundary50(t *testing.T) {
-	// given: an efficiency at the 50% boundary
-	// when: getting the color category
-	category := EfficiencyCategory(50.0)
-
-	// then: returns critical (50 is not > 50)
-	assert.Equal(t, domain.SavingsCategoryCritical, category)
 }
 
 func TestImpactBarGradient_HighImpact(t *testing.T) {
@@ -416,31 +385,22 @@ func TestStatsFormatter_RenderCommandTable_ViewportExactlyAtThreshold(t *testing
 	assert.NotContains(t, result, "▼")
 }
 
-func TestStatsFormatter_RenderSummary_ContainsSparkline(t *testing.T) {
-	// given: a StatsFormatter with token savings trend data
+func TestStatsFormatter_RenderSummary_NoSparkline(t *testing.T) {
+	// given: a StatsFormatter with summary data
 	f := NewStatsFormatter(80, newTestTheme())
-	f.SetSavingsTrend([]int{1000, 1500, 2000, 1800, 2500})
 	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
 
 	// when: rendering the summary
 	result := f.RenderSummary(summary)
 
-	// then: contains sparkline label and characters
-	assert.Contains(t, result, "Trend:")
+	// then: output does NOT contain sparkline or 'Trend:' label
+	assert.NotContains(t, result, "Trend:")
 }
 
 func TestStatsFormatter_UsesThemeColors(t *testing.T) {
 	// given: StatsFormatter with a theme provider
 	tp := newTestTheme()
 	f := NewStatsFormatter(80, tp)
-
-	// when: mapping efficiency 85% to category and getting color
-	effCat := EfficiencyCategory(85.0)
-	color := tp.ColorFor(effCat)
-
-	// then: returns the success color from theme (not a hardcoded value)
-	assert.Equal(t, domain.SavingsCategoryGood, effCat)
-	assert.Equal(t, "#00FF00", color)
 
 	// when: mapping impact 50% to category and getting color
 	impCat := ImpactCategory(50.0)
@@ -464,14 +424,97 @@ func TestStatsFormatter_UsesThemeColors(t *testing.T) {
 	assert.NotEmpty(t, result)
 }
 
-func TestStatsFormatter_RenderSummary_NoSparklineWhenNoTrend(t *testing.T) {
-	// given: a StatsFormatter with no trend data
+func TestStatsFormatter_RenderCommandTable_ImpactColumnAligned(t *testing.T) {
+	// given: StatsFormatter with multiple commands having different impact values
+	f := NewStatsFormatter(100, newTestTheme())
+	commands := []domain.AggregatedCommandStats{
+		domain.NewAggregatedCommandStats("git status", 42, 500000, 92.3, 150*time.Millisecond),
+		domain.NewAggregatedCommandStats("go build", 10, 100000, 50.0, 2*time.Second),
+		domain.NewAggregatedCommandStats("npm install", 5, 50000, 30.0, 5*time.Second),
+	}
+	commands = domain.CalculateImpact(commands)
+
+	// when: rendering the command table
+	result := f.RenderCommandTable(commands)
+
+	// then: Impact column header and impact bars are aligned vertically
+	// Find the position of "Impact" in the header line and the start of bars in data rows
+	lines := strings.Split(result, "\n")
+	headerIdx := -1
+	for i, line := range lines {
+		if strings.Contains(line, "Impact") && strings.Contains(line, "Command") {
+			headerIdx = i
+			break
+		}
+	}
+	require.NotEqual(t, -1, headerIdx, "should find header line")
+
+	// Get the column position of "Impact" in the header
+	headerLine := lines[headerIdx]
+	impactPos := strings.Index(headerLine, "Impact")
+	require.Greater(t, impactPos, 0, "Impact should be found in header")
+
+	// Check that each data row has its impact bar starting at the same column position
+	dataRowCount := 0
+	for i := headerIdx + 1; i < len(lines); i++ {
+		line := lines[i]
+		// Skip non-data lines (borders, scroll indicators, empty)
+		if !strings.Contains(line, "git status") &&
+			!strings.Contains(line, "go build") &&
+			!strings.Contains(line, "npm install") {
+			continue
+		}
+		dataRowCount++
+		// The impact bar character (█ or ░) should start at the same position as the header
+		barStartIdx := strings.IndexAny(line, "█░")
+		require.NotEqual(t, -1, barStartIdx, "data row should contain impact bar characters")
+		assert.Equal(t, impactPos, barStartIdx,
+			"Impact bar in row should align with Impact header (row: %q)", line)
+	}
+	assert.Equal(t, 3, dataRowCount, "should have found 3 data rows")
+}
+
+func TestStatsFormatter_RenderCommandTable_HeaderMatchesRowWidth(t *testing.T) {
+	// given: StatsFormatter with command stats
+	f := NewStatsFormatter(100, newTestTheme())
+	commands := []domain.AggregatedCommandStats{
+		domain.NewAggregatedCommandStats("git status", 42, 500000, 92.3, 150*time.Millisecond),
+	}
+	commands = domain.CalculateImpact(commands)
+
+	// when: rendering the command table
+	result := f.RenderCommandTable(commands)
+
+	// then: Impact column width in header matches width used in data rows
+	lines := strings.Split(result, "\n")
+	var headerLine, dataLine string
+	for _, line := range lines {
+		if strings.Contains(line, "Impact") && strings.Contains(line, "Command") {
+			headerLine = line
+		}
+		if strings.Contains(line, "git status") {
+			dataLine = line
+		}
+	}
+	require.NotEmpty(t, headerLine, "should find header line")
+	require.NotEmpty(t, dataLine, "should find data line")
+
+	// The Impact text starts at same position as the bar characters
+	impactHeaderPos := strings.Index(headerLine, "Impact")
+	barPos := strings.IndexAny(dataLine, "█░")
+	require.NotEqual(t, -1, impactHeaderPos)
+	require.NotEqual(t, -1, barPos)
+	assert.Equal(t, impactHeaderPos, barPos, "Impact header and bar should be at the same column position")
+}
+
+func TestStatsFormatter_SetSavingsTrend_MethodRemoved(t *testing.T) {
+	// This test verifies at compile time that SetSavingsTrend is removed.
+	// The StatsFormatter struct should NOT have a SetSavingsTrend method.
+	// If this test compiles, the savingsTrend field and method are gone.
 	f := NewStatsFormatter(80, newTestTheme())
-	summary := domain.NewStatsSummary(150, 27500000, 85.5, 12*time.Minute+20*time.Second)
-
-	// when: rendering the summary
+	// Verify the formatter still works without trend support
+	summary := domain.NewStatsSummary(10, 5000, 85.0, 1*time.Minute)
 	result := f.RenderSummary(summary)
-
-	// then: no trend label shown
+	assert.NotEmpty(t, result)
 	assert.NotContains(t, result, "Trend:")
 }
