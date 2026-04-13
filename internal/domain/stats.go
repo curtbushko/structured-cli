@@ -21,6 +21,12 @@ type StatsSummary struct {
 
 	// FilteredCount is the number of commands that had filters applied.
 	FilteredCount int
+
+	// TotalInputTokens is the cumulative input tokens across all commands.
+	TotalInputTokens int
+
+	// TotalOutputTokens is the cumulative output tokens across all commands.
+	TotalOutputTokens int
 }
 
 // NewStatsSummary creates a new StatsSummary with the given values.

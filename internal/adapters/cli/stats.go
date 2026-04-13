@@ -142,20 +142,11 @@ func executeSummaryStats(ctx context.Context, reader ports.TrackingReader, flags
 
 // writeSummaryFormatted writes the summary using the StatsFormatter port with styled output.
 func writeSummaryFormatted(ctx context.Context, reader ports.TrackingReader, out io.Writer, summary domain.StatsSummary, sf ports.StatsFormatter) error {
-	// Get history for aggregation and sparkline trend data
+	// Get history for aggregation
 	history, err := reader.History(ctx, 0)
 	if err != nil {
 		// If we can't get history, still render header and summary
 		history = nil
-	}
-
-	// Set savings trend from history for sparkline
-	if len(history) > 0 {
-		trend := make([]int, len(history))
-		for i, rec := range history {
-			trend[i] = rec.TokensSaved
-		}
-		sf.SetSavingsTrend(trend)
 	}
 
 	// Render header

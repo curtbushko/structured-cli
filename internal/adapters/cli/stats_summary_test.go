@@ -16,15 +16,9 @@ import (
 )
 
 // mockStatsFormatter implements ports.StatsFormatter for testing.
-type mockStatsFormatter struct {
-	savingsTrend []int
-}
+type mockStatsFormatter struct{}
 
 var _ ports.StatsFormatter = (*mockStatsFormatter)(nil)
-
-func (m *mockStatsFormatter) SetSavingsTrend(values []int) {
-	m.savingsTrend = values
-}
 
 func (m *mockStatsFormatter) RenderHeader() string {
 	return "== Token Savings (Global Scope) =="
@@ -241,8 +235,8 @@ func TestExecuteSummaryStats_WithHistory_IncludesCommandTable(t *testing.T) {
 	assert.Contains(t, output, "npm test")
 }
 
-func TestExecuteSummaryStats_SetsSavingsTrend(t *testing.T) {
-	// given: stats with history records for sparkline trend
+func TestExecuteSummaryStats_RendersWithoutTrend(t *testing.T) {
+	// given: stats with history records (trend no longer used)
 	reader := &mockTrackingReader{
 		summary: domain.NewStatsSummary(3, 3000, 60.0, 3*time.Minute),
 		history: []domain.CommandRecord{
@@ -257,9 +251,10 @@ func TestExecuteSummaryStats_SetsSavingsTrend(t *testing.T) {
 	var buf bytes.Buffer
 	err := executeStatsCommand(context.Background(), reader, statsFlags{}, &buf, sf)
 
-	// then: savings trend was set on the formatter
+	// then: renders successfully without trend data
 	require.NoError(t, err)
-	assert.Equal(t, []int{1000, 1500, 500}, sf.savingsTrend)
+	output := buf.String()
+	assert.Contains(t, output, "Token Savings")
 }
 
 func TestExecuteSummaryStats_NilFormatterFallsBack(t *testing.T) {

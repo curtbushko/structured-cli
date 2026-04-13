@@ -10,13 +10,10 @@ import (
 // StatsFormatter renders formatted statistics output with styled sections.
 // Implementations produce terminal-aware output with borders, colors, and visual elements.
 type StatsFormatter interface {
-	// SetSavingsTrend sets token savings trend data for sparkline rendering.
-	SetSavingsTrend(values []int)
-
 	// RenderHeader renders the styled header section with title.
 	RenderHeader() string
 
-	// RenderSummary renders the summary section with formatted stats and efficiency meter.
+	// RenderSummary renders the summary section with formatted stats.
 	RenderSummary(summary domain.StatsSummary) string
 
 	// RenderCommandTable renders the command table with impact bars.
