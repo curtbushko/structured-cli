@@ -1,5 +1,5 @@
 project: "structured-cli"
-current_phase: 30
+current_phase: 34
 phases:
   - id: 1
     name: "Project Setup"
@@ -151,3 +151,43 @@ phases:
     file: "phase-30-stats-output-refinements.md"
     status: completed
     progress: "4/4"
+  - id: 31
+    name: "Bug Fixes & Feature Improvements"
+    file: "phase-31-bug-fixes-feature-improvements.md"
+    status: completed
+    progress: "5/5"
+  - id: 32
+    name: "Fix Tracking Test Failures"
+    file: "phase-32-fix-tracking-tests.md"
+    status: completed
+    progress: "12/12"
+  - id: 33
+    name: "Optimize Grep Parser - Ultra-Compact JSON Format"
+    file: "phase-33-grep-compact-format.md"
+    status: completed
+    progress: "20/20"
+  - id: 34
+    name: "Optimize Linter Parsers - Ultra-Compact JSON Format"
+    file: "phase-34-optimize-linter-parsers.md"
+    status: pending
+    progress: "0/72"
+  - id: 35
+    name: "Optimize File Operation Parsers - Ultra-Compact JSON Format"
+    file: "phase-35-optimize-file-parsers.md"
+    status: pending
+    progress: "0/54"
+  - id: 36
+    name: "Optimize Test Runner Parsers - Ultra-Compact JSON Format"
+    file: "phase-36-optimize-test-parsers.md"
+    status: pending
+    progress: "0/78"
+  - id: 37
+    name: "Optimize Container Parsers - Ultra-Compact JSON Format"
+    file: "phase-37-optimize-container-parsers.md"
+    status: pending
+    progress: "0/72"
+  - id: 38
+    name: "Optimize Git Parsers - Ultra-Compact JSON Format"
+    file: "phase-38-optimize-git-parsers.md"
+    status: pending
+    progress: "0/60"
