@@ -2,23 +2,81 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://structured-cli.dev/schemas/grep.json",
   "title": "Grep Output",
+  "description": "Compact array-based format for grep output. This format uses tuples instead of objects to reduce token count by ~60% when processing with LLMs, while maintaining full data fidelity.",
   "type": "object",
   "properties": {
-    "matches": {
+    "total": {
+      "type": "integer",
+      "description": "Total number of matches across all files"
+    },
+    "files": {
+      "type": "integer",
+      "description": "Number of files with matches"
+    },
+    "results": {
       "type": "array",
+      "description": "List of file match groups. Each element is a 3-tuple: [filename, count, matches] where matches is an array of 2-tuples: [line_number, content]",
       "items": {
-        "type": "object",
-        "properties": {
-          "file": { "type": "string" },
-          "line": { "type": "integer" },
-          "content": { "type": "string" },
-          "column": { "type": "integer" }
-        },
-        "required": ["content"]
+        "type": "array",
+        "description": "File match group: [filename, count, matches]",
+        "minItems": 3,
+        "maxItems": 3,
+        "prefixItems": [
+          {
+            "type": "string",
+            "description": "Filename containing matches"
+          },
+          {
+            "type": "integer",
+            "description": "Total number of matches in this file (may exceed displayed matches if truncated)"
+          },
+          {
+            "type": "array",
+            "description": "Array of match tuples: [line_number, content]",
+            "items": {
+              "type": "array",
+              "description": "Match tuple: [line_number, content]",
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "description": "Line number of the match (0 if line numbers not available)"
+                },
+                {
+                  "type": "string",
+                  "description": "Content of the matching line"
+                }
+              ]
+            }
+          }
+        ]
       }
     },
-    "count": { "type": "integer" },
-    "filesMatched": { "type": "integer" }
+    "truncated": {
+      "type": "boolean",
+      "description": "Whether output was truncated due to size limits (max 10 matches per file, max 200 total matches)"
+    }
   },
-  "required": ["matches", "count", "filesMatched"]
+  "required": ["total", "files", "results", "truncated"],
+  "examples": [
+    {
+      "total": 5,
+      "files": 2,
+      "results": [
+        ["src/main.go", 3, [[10, "func main() {"], [25, "    fmt.Println(\"hello\")"], [30, "}"]]],
+        ["src/util.go", 2, [[5, "func helper() {"], [8, "}"]]]
+      ],
+      "truncated": false
+    },
+    {
+      "total": 250,
+      "files": 15,
+      "results": [
+        ["large_file.go", 50, [[1, "match 1"], [5, "match 2"], [10, "match 3"]]],
+        ["another.go", 200, [[100, "important match"]]]
+      ],
+      "truncated": true
+    }
+  ]
 }

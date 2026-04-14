@@ -72,15 +72,20 @@ Feature: File Operations
     When I run "structured-cli grep Hello test.txt --json"
     Then the exit code should be 0
     And the output should be valid JSON
-    And the JSON should contain key "matches" as an array
+    And the JSON should contain key "results" as an array
+    And the JSON should contain key "total"
+    And the JSON should contain key "files"
+    And the JSON should contain key "truncated"
 
   Scenario: grep - pattern matching with line numbers
     Given I have a file "test.txt" with multiple lines
     When I run "structured-cli grep -n Line test.txt --json"
     Then the exit code should be 0
     And the output should be valid JSON
-    And the JSON should contain key "matches" as an array
-    And the JSON should contain key "count"
+    And the JSON should contain key "results" as an array
+    And the JSON should contain key "total"
+    And the JSON should contain key "files"
+    And the JSON should contain key "truncated"
 
   Scenario: du - disk usage
     Given I have a directory with files
