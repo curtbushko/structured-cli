@@ -34,36 +34,45 @@ func NewESLintParser() *ESLintParser {
 			"ESLint Output",
 			"object",
 			map[string]domain.PropertySchema{
-				"success": {Type: "boolean", Description: "Whether linting completed without issues"},
-				"issues":  {Type: "array", Description: "List of lint issues found"},
+				"total_issues":      {Type: "integer", Description: "Total count of all lint issues"},
+				"files_with_issues": {Type: "integer", Description: "Count of files with at least one issue"},
+				"severity_counts":   {Type: "object", Description: "Map of severity levels to their counts"},
+				"results":           {Type: "array", Description: "Issues grouped by file in compact tuple format"},
+				"truncated":         {Type: "integer", Description: "Count of issues omitted due to truncation limits"},
 			},
-			[]string{"success", "issues"},
+			[]string{"total_issues", "files_with_issues", "severity_counts", "results", "truncated"},
 		),
 	}
 }
 
-// Parse reads eslint output and returns structured data.
+// Parse reads eslint output and returns structured data in compact format.
 // For clean code, eslint produces no output.
 func (p *ESLintParser) Parse(r io.Reader) (domain.ParseResult, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return domain.NewParseResultWithError(err, "", 0), nil
+	return BuildCompactParseResult(r, eslintToCompactIssues, func(data CompactResultData) *ESLintResultCompact {
+		return &ESLintResultCompact{
+			TotalIssues:     data.TotalIssues,
+			FilesWithIssues: data.FilesWithIssues,
+			SeverityCounts:  data.SeverityCounts,
+			Results:         data.Results,
+			Truncated:       data.Truncated,
+		}
+	})
+}
+
+// eslintToCompactIssues parses eslint output and converts to CompactIssue.
+func eslintToCompactIssues(raw string) []CompactIssue {
+	eslintIssues := parseESLintOutput(raw)
+	compactIssues := make([]CompactIssue, 0, len(eslintIssues))
+	for _, issue := range eslintIssues {
+		compactIssues = append(compactIssues, CompactIssue{
+			File:     issue.File,
+			Line:     issue.Line,
+			Severity: StandardizeSeverity(issue.Severity),
+			Message:  TruncateMessage(issue.Message),
+			RuleID:   issue.Rule,
+		})
 	}
-
-	raw := string(data)
-
-	result := &ESLintResult{
-		Success: true,
-		Issues:  []ESLintIssue{},
-	}
-
-	result.Issues = parseESLintOutput(raw)
-
-	if len(result.Issues) > 0 {
-		result.Success = false
-	}
-
-	return domain.NewParseResult(result, raw, 0), nil
+	return compactIssues
 }
 
 // parseESLintOutput parses the ESLint output and extracts issues.

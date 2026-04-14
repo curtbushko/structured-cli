@@ -3,28 +3,35 @@ package lint
 import (
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrettierParser_Success(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		wantData PrettierResult
+		wantData PrettierResultCompact
 	}{
 		{
 			name:  "empty output indicates all files formatted",
 			input: "",
-			wantData: PrettierResult{
-				Success:     true,
-				Unformatted: []string{},
+			wantData: PrettierResultCompact{
+				Success:        true,
+				TotalChecked:   0,
+				NeedFormatting: 0,
+				Files:          []string{},
 			},
 		},
 		{
 			name:  "checking message with no files indicates success",
 			input: "Checking formatting...",
-			wantData: PrettierResult{
-				Success:     true,
-				Unformatted: []string{},
+			wantData: PrettierResultCompact{
+				Success:        true,
+				TotalChecked:   0,
+				NeedFormatting: 0,
+				Files:          []string{},
 			},
 		},
 	}
@@ -33,26 +40,16 @@ func TestPrettierParser_Success(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			parser := NewPrettierParser()
 			result, err := parser.Parse(strings.NewReader(tt.input))
-			if err != nil {
-				t.Fatalf("Parse() returned error: %v", err)
-			}
+			require.NoError(t, err)
+			require.Nil(t, result.Error)
 
-			if result.Error != nil {
-				t.Fatalf("ParseResult.Error = %v, want nil", result.Error)
-			}
+			got, ok := result.Data.(*PrettierResultCompact)
+			require.True(t, ok, "ParseResult.Data type = %T, want *PrettierResultCompact", result.Data)
 
-			got, ok := result.Data.(*PrettierResult)
-			if !ok {
-				t.Fatalf("ParseResult.Data type = %T, want *PrettierResult", result.Data)
-			}
-
-			if got.Success != tt.wantData.Success {
-				t.Errorf("PrettierResult.Success = %v, want %v", got.Success, tt.wantData.Success)
-			}
-
-			if len(got.Unformatted) != len(tt.wantData.Unformatted) {
-				t.Errorf("PrettierResult.Unformatted length = %d, want %d", len(got.Unformatted), len(tt.wantData.Unformatted))
-			}
+			assert.Equal(t, tt.wantData.Success, got.Success)
+			assert.Equal(t, tt.wantData.TotalChecked, got.TotalChecked)
+			assert.Equal(t, tt.wantData.NeedFormatting, got.NeedFormatting)
+			assert.Equal(t, tt.wantData.Files, got.Files)
 		})
 	}
 }
@@ -65,30 +62,16 @@ func TestPrettierParser_SingleUnformattedFile(t *testing.T) {
 
 	parser := NewPrettierParser()
 	result, err := parser.Parse(strings.NewReader(input))
-	if err != nil {
-		t.Fatalf("Parse() returned error: %v", err)
-	}
+	require.NoError(t, err)
+	require.Nil(t, result.Error)
 
-	if result.Error != nil {
-		t.Fatalf("ParseResult.Error = %v, want nil", result.Error)
-	}
+	got, ok := result.Data.(*PrettierResultCompact)
+	require.True(t, ok, "ParseResult.Data type = %T, want *PrettierResultCompact", result.Data)
 
-	got, ok := result.Data.(*PrettierResult)
-	if !ok {
-		t.Fatalf("ParseResult.Data type = %T, want *PrettierResult", result.Data)
-	}
-
-	if got.Success {
-		t.Error("PrettierResult.Success = true, want false when unformatted files present")
-	}
-
-	if len(got.Unformatted) != 1 {
-		t.Fatalf("PrettierResult.Unformatted length = %d, want 1", len(got.Unformatted))
-	}
-
-	if got.Unformatted[0] != "src/index.js" {
-		t.Errorf("PrettierResult.Unformatted[0] = %q, want %q", got.Unformatted[0], "src/index.js")
-	}
+	assert.False(t, got.Success, "Success should be false when unformatted files present")
+	assert.Equal(t, 1, got.NeedFormatting)
+	require.Len(t, got.Files, 1)
+	assert.Equal(t, "src/index.js", got.Files[0])
 }
 
 func TestPrettierParser_MultipleUnformattedFiles(t *testing.T) {
@@ -100,33 +83,18 @@ func TestPrettierParser_MultipleUnformattedFiles(t *testing.T) {
 
 	parser := NewPrettierParser()
 	result, err := parser.Parse(strings.NewReader(input))
-	if err != nil {
-		t.Fatalf("Parse() returned error: %v", err)
-	}
+	require.NoError(t, err)
+	require.Nil(t, result.Error)
 
-	if result.Error != nil {
-		t.Fatalf("ParseResult.Error = %v, want nil", result.Error)
-	}
+	got, ok := result.Data.(*PrettierResultCompact)
+	require.True(t, ok, "ParseResult.Data type = %T, want *PrettierResultCompact", result.Data)
 
-	got, ok := result.Data.(*PrettierResult)
-	if !ok {
-		t.Fatalf("ParseResult.Data type = %T, want *PrettierResult", result.Data)
-	}
-
-	if got.Success {
-		t.Error("PrettierResult.Success = true, want false when unformatted files present")
-	}
-
-	if len(got.Unformatted) != 3 {
-		t.Fatalf("PrettierResult.Unformatted length = %d, want 3", len(got.Unformatted))
-	}
+	assert.False(t, got.Success, "Success should be false when unformatted files present")
+	assert.Equal(t, 3, got.NeedFormatting)
+	require.Len(t, got.Files, 3)
 
 	wantFiles := []string{"src/index.js", "src/utils.ts", "src/app.tsx"}
-	for i, wantFile := range wantFiles {
-		if got.Unformatted[i] != wantFile {
-			t.Errorf("PrettierResult.Unformatted[%d] = %q, want %q", i, got.Unformatted[i], wantFile)
-		}
-	}
+	assert.Equal(t, wantFiles, got.Files)
 }
 
 func TestPrettierParser_Matches(t *testing.T) {
@@ -179,9 +147,7 @@ func TestPrettierParser_Matches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parser.Matches(tt.cmd, tt.subcommands)
-			if got != tt.want {
-				t.Errorf("Matches(%q, %v) = %v, want %v", tt.cmd, tt.subcommands, got, tt.want)
-			}
+			assert.Equal(t, tt.want, got, "Matches(%q, %v)", tt.cmd, tt.subcommands)
 		})
 	}
 }
@@ -190,24 +156,15 @@ func TestPrettierParser_Schema(t *testing.T) {
 	parser := NewPrettierParser()
 	schema := parser.Schema()
 
-	if schema.ID == "" {
-		t.Error("Schema.ID should not be empty")
-	}
+	assert.NotEmpty(t, schema.ID, "Schema.ID should not be empty")
+	assert.NotEmpty(t, schema.Title, "Schema.Title should not be empty")
+	assert.Equal(t, "object", schema.Type)
 
-	if schema.Title == "" {
-		t.Error("Schema.Title should not be empty")
-	}
-
-	if schema.Type != "object" {
-		t.Errorf("Schema.Type = %q, want %q", schema.Type, "object")
-	}
-
-	// Verify required properties exist
-	requiredProps := []string{"success", "unformatted"}
+	// Verify required properties exist for compact format
+	requiredProps := []string{"success", "total_checked", "need_formatting", "files"}
 	for _, prop := range requiredProps {
-		if _, ok := schema.Properties[prop]; !ok {
-			t.Errorf("Schema.Properties missing %q", prop)
-		}
+		_, ok := schema.Properties[prop]
+		assert.True(t, ok, "Schema.Properties missing %q", prop)
 	}
 }
 
@@ -218,20 +175,43 @@ All matched files use Prettier code style!`
 
 	parser := NewPrettierParser()
 	result, err := parser.Parse(strings.NewReader(input))
-	if err != nil {
-		t.Fatalf("Parse() returned error: %v", err)
-	}
+	require.NoError(t, err)
 
-	got, ok := result.Data.(*PrettierResult)
-	if !ok {
-		t.Fatalf("ParseResult.Data type = %T, want *PrettierResult", result.Data)
-	}
+	got, ok := result.Data.(*PrettierResultCompact)
+	require.True(t, ok, "ParseResult.Data type = %T, want *PrettierResultCompact", result.Data)
 
-	if !got.Success {
-		t.Error("PrettierResult.Success = false, want true when all files formatted")
-	}
+	assert.True(t, got.Success, "Success should be true when all files formatted")
+	assert.Equal(t, 0, got.NeedFormatting)
+	assert.Empty(t, got.Files)
+}
 
-	if len(got.Unformatted) != 0 {
-		t.Errorf("PrettierResult.Unformatted length = %d, want 0", len(got.Unformatted))
-	}
+func TestPrettierParser_Counts(t *testing.T) {
+	// Prettier --check outputs files that need formatting
+	// Note: Prettier doesn't report total files checked, only files needing formatting
+	input := `Checking formatting...
+[warn] src/index.js
+[warn] src/utils.ts
+[warn] src/app.tsx
+[warn] Code style issues found in 3 files. Run Prettier to fix.`
+
+	parser := NewPrettierParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	require.NoError(t, err)
+	require.Nil(t, result.Error)
+
+	got, ok := result.Data.(*PrettierResultCompact)
+	require.True(t, ok, "ParseResult.Data type = %T, want *PrettierResultCompact", result.Data)
+
+	// Verify counts
+	assert.Equal(t, 0, got.TotalChecked, "TotalChecked should be 0 (Prettier doesn't report total)")
+	assert.Equal(t, 3, got.NeedFormatting, "NeedFormatting should match file count")
+
+	// Verify Files list
+	require.Len(t, got.Files, 3, "Files list should have 3 entries")
+	assert.Contains(t, got.Files, "src/index.js")
+	assert.Contains(t, got.Files, "src/utils.ts")
+	assert.Contains(t, got.Files, "src/app.tsx")
+
+	// Verify success is false when files need formatting
+	assert.False(t, got.Success, "Success should be false when files need formatting")
 }

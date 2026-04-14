@@ -26,10 +26,12 @@ func NewPrettierParser() *PrettierParser {
 			"Prettier Check Output",
 			"object",
 			map[string]domain.PropertySchema{
-				"success":     {Type: "boolean", Description: "Whether all files are properly formatted"},
-				"unformatted": {Type: "array", Description: "List of files that need formatting"},
+				"success":         {Type: "boolean", Description: "Whether all files are properly formatted"},
+				"total_checked":   {Type: "integer", Description: "Total number of files checked"},
+				"need_formatting": {Type: "integer", Description: "Count of files that need formatting"},
+				"files":           {Type: "array", Description: "List of files that need formatting"},
 			},
-			[]string{"success", "unformatted"},
+			[]string{"success", "total_checked", "need_formatting", "files"},
 		),
 	}
 }
@@ -43,15 +45,16 @@ func (p *PrettierParser) Parse(r io.Reader) (domain.ParseResult, error) {
 
 	raw := string(data)
 
-	result := &PrettierResult{
-		Success:     true,
-		Unformatted: []string{},
+	files := parsePrettierOutput(raw)
+	if files == nil {
+		files = []string{}
 	}
 
-	result.Unformatted = parsePrettierOutput(raw)
-
-	if len(result.Unformatted) > 0 {
-		result.Success = false
+	result := &PrettierResultCompact{
+		Success:        len(files) == 0,
+		TotalChecked:   0, // Prettier doesn't report total checked in --check output
+		NeedFormatting: len(files),
+		Files:          files,
 	}
 
 	return domain.NewParseResult(result, raw, 0), nil

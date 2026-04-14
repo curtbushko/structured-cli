@@ -2,88 +2,92 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://structured-cli.dev/schemas/cargo-clippy.json",
   "title": "Cargo Clippy Output",
+  "description": "Compact format output for cargo clippy lint results",
   "type": "object",
   "properties": {
-    "success": {
-      "type": "boolean",
-      "description": "Whether clippy completed without errors"
+    "total_issues": {
+      "type": "integer",
+      "description": "Total count of all lint issues"
     },
-    "warnings": {
-      "type": "array",
-      "description": "Clippy lint warnings",
-      "items": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "description": "The diagnostic message from clippy"
-          },
-          "code": {
-            "type": "string",
-            "description": "The lint code (e.g., clippy::unwrap_used)"
-          },
-          "level": {
-            "type": "string",
-            "description": "The diagnostic level (warning, error)"
-          },
-          "file": {
-            "type": "string",
-            "description": "The source file where the diagnostic occurred"
-          },
-          "line": {
-            "type": "integer",
-            "description": "The line number where the diagnostic occurred"
-          },
-          "column": {
-            "type": "integer",
-            "description": "The column number where the diagnostic occurred"
-          },
-          "rendered": {
-            "type": "string",
-            "description": "The human-readable rendered message"
-          }
-        },
-        "required": ["message"]
+    "files_with_issues": {
+      "type": "integer",
+      "description": "Count of files with at least one issue"
+    },
+    "severity_counts": {
+      "type": "object",
+      "description": "Maps severity levels to their counts",
+      "additionalProperties": {
+        "type": "integer"
       }
     },
-    "errors": {
+    "results": {
       "type": "array",
-      "description": "Clippy lint errors",
+      "description": "Grouped issues by file in compact tuple format",
       "items": {
-        "type": "object",
-        "properties": {
-          "message": {
+        "type": "array",
+        "description": "FileIssueGroup: [filename, issue_count, issues]",
+        "items": [
+          {
             "type": "string",
-            "description": "The diagnostic message from clippy"
+            "description": "File path"
           },
-          "code": {
-            "type": "string",
-            "description": "The lint code"
-          },
-          "level": {
-            "type": "string",
-            "description": "The diagnostic level"
-          },
-          "file": {
-            "type": "string",
-            "description": "The source file where the diagnostic occurred"
-          },
-          "line": {
+          {
             "type": "integer",
-            "description": "The line number where the diagnostic occurred"
+            "description": "Number of issues in file"
           },
-          "column": {
-            "type": "integer",
-            "description": "The column number where the diagnostic occurred"
-          },
-          "rendered": {
-            "type": "string",
-            "description": "The human-readable rendered message"
+          {
+            "type": "array",
+            "description": "Array of issue tuples",
+            "items": {
+              "type": "array",
+              "description": "IssueTuple: [line, severity, message, rule_id]",
+              "items": [
+                {
+                  "type": "integer",
+                  "description": "Line number"
+                },
+                {
+                  "type": "string",
+                  "description": "Severity level (error, warning, info, style)"
+                },
+                {
+                  "type": "string",
+                  "description": "Issue message"
+                },
+                {
+                  "type": "string",
+                  "description": "Lint rule ID (e.g., clippy::unwrap_used)"
+                }
+              ]
+            }
           }
-        },
-        "required": ["message"]
+        ]
       }
+    },
+    "truncated": {
+      "type": "integer",
+      "description": "Number of issues omitted due to truncation limits"
     }
   },
-  "required": ["success", "warnings", "errors"]
+  "required": ["total_issues", "files_with_issues", "severity_counts", "results", "truncated"],
+  "examples": [
+    {
+      "total_issues": 3,
+      "files_with_issues": 2,
+      "severity_counts": {
+        "warning": 2,
+        "error": 1
+      },
+      "results": [
+        ["src/main.rs", 2, [
+          [15, "warning", "use of `unwrap()` on a `Result` value", "clippy::unwrap_used"],
+          [22, "warning", "variable does not need to be mutable", "clippy::needless_mut"]
+        ]],
+        ["src/lib.rs", 1, [
+          [10, "error", "borrow of moved value: `x`", "E0382"]
+        ]]
+      ],
+      "truncated": 0
+    }
+  ]
 }

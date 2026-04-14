@@ -30,35 +30,44 @@ func NewGolangCILintParser() *GolangCILintParser {
 			"golangci-lint Output",
 			"object",
 			map[string]domain.PropertySchema{
-				"success": {Type: "boolean", Description: "Whether linting completed without issues"},
-				"issues":  {Type: "array", Description: "List of lint issues found"},
+				"total_issues":      {Type: "integer", Description: "Total count of all lint issues"},
+				"files_with_issues": {Type: "integer", Description: "Count of files with at least one issue"},
+				"severity_counts":   {Type: "object", Description: "Map of severity levels to their counts"},
+				"results":           {Type: "array", Description: "Issues grouped by file in compact tuple format"},
+				"truncated":         {Type: "integer", Description: "Count of issues omitted due to truncation limits"},
 			},
-			[]string{"success", "issues"},
+			[]string{"total_issues", "files_with_issues", "severity_counts", "results", "truncated"},
 		),
 	}
 }
 
-// Parse reads golangci-lint run output and returns structured data.
+// Parse reads golangci-lint run output and returns structured data in compact format.
 func (p *GolangCILintParser) Parse(r io.Reader) (domain.ParseResult, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return domain.NewParseResultWithError(err, "", 0), nil
+	return BuildCompactParseResult(r, golangciLintToCompactIssues, func(data CompactResultData) *GolangCILintResultCompact {
+		return &GolangCILintResultCompact{
+			TotalIssues:     data.TotalIssues,
+			FilesWithIssues: data.FilesWithIssues,
+			SeverityCounts:  data.SeverityCounts,
+			Results:         data.Results,
+			Truncated:       data.Truncated,
+		}
+	})
+}
+
+// golangciLintToCompactIssues parses golangci-lint output and converts to CompactIssue.
+func golangciLintToCompactIssues(raw string) []CompactIssue {
+	golangciIssues := parseGolangCILintOutput(raw)
+	compactIssues := make([]CompactIssue, 0, len(golangciIssues))
+	for _, issue := range golangciIssues {
+		compactIssues = append(compactIssues, CompactIssue{
+			File:     issue.File,
+			Line:     issue.Line,
+			Severity: StandardizeSeverity(issue.Severity),
+			Message:  TruncateMessage(issue.Message),
+			RuleID:   issue.Linter, // Use linter name as rule ID
+		})
 	}
-
-	raw := string(data)
-
-	result := &GolangCILintResult{
-		Success: true,
-		Issues:  []GolangCILintIssue{},
-	}
-
-	result.Issues = parseGolangCILintOutput(raw)
-
-	if len(result.Issues) > 0 {
-		result.Success = false
-	}
-
-	return domain.NewParseResult(result, raw, 0), nil
+	return compactIssues
 }
 
 // parseGolangCILintOutput extracts issues from golangci-lint output.

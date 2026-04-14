@@ -33,16 +33,22 @@ func NewMypyParser() *MypyParser {
 			"Mypy Type Check Output",
 			"object",
 			map[string]domain.PropertySchema{
-				"success": {Type: "boolean", Description: "Whether type checking completed without errors"},
-				"errors":  {Type: "array", Description: "List of type errors found"},
-				"summary": {Type: "string", Description: "Summary line from mypy output"},
+				"total_issues":      {Type: "integer", Description: "Total count of all type errors"},
+				"files_with_issues": {Type: "integer", Description: "Count of files with at least one error"},
+				"severity_counts":   {Type: "object", Description: "Map of severity levels to their counts"},
+				"results":           {Type: "array", Description: "Errors grouped by file in compact tuple format"},
+				"truncated":         {Type: "integer", Description: "Count of errors omitted due to truncation limits"},
+				"summary":           {Type: "string", Description: "Summary line from mypy output"},
 			},
-			[]string{"success", "errors", "summary"},
+			[]string{"total_issues", "files_with_issues", "severity_counts", "results", "truncated", "summary"},
 		),
 	}
 }
 
-// Parse reads mypy output and returns structured data.
+// maxMypyMessageLength is the maximum length for mypy messages (truncate verbose type signatures)
+const maxMypyMessageLength = 100
+
+// Parse reads mypy output and returns structured data in compact format.
 func (p *MypyParser) Parse(r io.Reader) (domain.ParseResult, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -51,19 +57,63 @@ func (p *MypyParser) Parse(r io.Reader) (domain.ParseResult, error) {
 
 	raw := string(data)
 
-	result := &MypyResult{
-		Success: true,
-		Errors:  []MypyError{},
-		Summary: "",
+	// Parse errors using existing logic
+	mypyErrors, summary := parseMypyOutput(raw)
+
+	// Convert MypyError to CompactIssue for helper functions
+	compactIssues := make([]CompactIssue, 0, len(mypyErrors))
+	for _, mypyErr := range mypyErrors {
+		// Map mypy severity: error->error, warning->warning, note->info
+		severity := mypySeverityToStandard(mypyErr.Severity)
+
+		// Truncate verbose type signatures in messages
+		message := TruncateMessageLength(mypyErr.Message, maxMypyMessageLength)
+
+		compactIssues = append(compactIssues, CompactIssue{
+			File:     mypyErr.File,
+			Line:     mypyErr.Line,
+			Severity: severity,
+			Message:  message,
+			RuleID:   mypyErr.Code, // Use error code as rule ID
+		})
 	}
 
-	result.Errors, result.Summary = parseMypyOutput(raw)
+	// Apply truncation
+	truncatedIssues, truncatedCount := TruncateIssues(compactIssues)
 
-	if len(result.Errors) > 0 {
-		result.Success = false
+	// Count severities
+	severityCounts := make(map[string]int)
+	for _, issue := range truncatedIssues {
+		severityCounts[issue.Severity]++
+	}
+
+	// Group errors by file
+	results := GroupIssuesByFile(truncatedIssues)
+
+	result := &MypyResultCompact{
+		TotalIssues:     len(mypyErrors),
+		FilesWithIssues: len(results),
+		SeverityCounts:  severityCounts,
+		Results:         results,
+		Truncated:       truncatedCount,
+		Summary:         summary,
 	}
 
 	return domain.NewParseResult(result, raw, 0), nil
+}
+
+// mypySeverityToStandard maps mypy severity to standard severity levels.
+func mypySeverityToStandard(severity string) string {
+	switch severity {
+	case "error":
+		return SeverityError
+	case "warning":
+		return SeverityWarning
+	case "note":
+		return SeverityInfo
+	default:
+		return SeverityWarning
+	}
 }
 
 // parseMypyOutput extracts errors and summary from mypy output.

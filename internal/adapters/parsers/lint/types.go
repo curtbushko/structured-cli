@@ -5,12 +5,32 @@ package lint
 
 // ESLintResult represents the structured output of 'eslint'.
 // It captures lint success and any issues found.
+// Deprecated: Use ESLintResultCompact for new code.
 type ESLintResult struct {
 	// Success indicates whether linting completed without issues.
 	Success bool `json:"success"`
 
 	// Issues contains the list of lint issues found.
 	Issues []ESLintIssue `json:"issues"`
+}
+
+// ESLintResultCompact represents the compact output format for 'eslint'.
+// It provides a summarized view optimized for token efficiency.
+type ESLintResultCompact struct {
+	// TotalIssues is the total count of all lint issues.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one issue.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped issues by file in compact tuple format.
+	Results []FileIssueGroup `json:"results"`
+
+	// Truncated indicates how many issues were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
 }
 
 // ESLintIssue represents a single ESLint issue.
@@ -36,12 +56,29 @@ type ESLintIssue struct {
 
 // PrettierResult represents the structured output of 'prettier --check'.
 // It lists files that are not properly formatted.
+// Deprecated: Use PrettierResultCompact for new code.
 type PrettierResult struct {
 	// Success indicates whether all files are properly formatted.
 	Success bool `json:"success"`
 
 	// Unformatted contains paths of files that need formatting.
 	Unformatted []string `json:"unformatted"`
+}
+
+// PrettierResultCompact represents the compact output format for 'prettier --check'.
+// It provides a simple summary since Prettier is binary (formatted vs needs formatting).
+type PrettierResultCompact struct {
+	// Success indicates whether all files are properly formatted.
+	Success bool `json:"success"`
+
+	// TotalChecked is the total number of files checked.
+	TotalChecked int `json:"total_checked"`
+
+	// NeedFormatting is the count of files that need formatting.
+	NeedFormatting int `json:"need_formatting"`
+
+	// Files contains paths of files that need formatting.
+	Files []string `json:"files"`
 }
 
 // BiomeResult represents the structured output of 'biome check'.
@@ -80,12 +117,32 @@ type BiomeIssue struct {
 
 // GolangCILintResult represents the structured output of 'golangci-lint run'.
 // It captures lint success and any issues found.
+// Deprecated: Use GolangCILintResultCompact for new code.
 type GolangCILintResult struct {
 	// Success indicates whether linting completed without issues.
 	Success bool `json:"success"`
 
 	// Issues contains the list of lint issues found.
 	Issues []GolangCILintIssue `json:"issues"`
+}
+
+// GolangCILintResultCompact represents the compact output format for 'golangci-lint run'.
+// It provides a summarized view optimized for token efficiency.
+type GolangCILintResultCompact struct {
+	// TotalIssues is the total count of all lint issues.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one issue.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped issues by file in compact tuple format.
+	Results []FileIssueGroup `json:"results"`
+
+	// Truncated indicates how many issues were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
 }
 
 // GolangCILintIssue represents a single golangci-lint issue.
@@ -111,12 +168,32 @@ type GolangCILintIssue struct {
 
 // RuffResult represents the structured output of 'ruff check'.
 // It captures lint success and any issues found.
+// Deprecated: Use RuffResultCompact for new code.
 type RuffResult struct {
 	// Success indicates whether linting completed without issues.
 	Success bool `json:"success"`
 
 	// Issues contains the list of lint issues found.
 	Issues []RuffIssue `json:"issues"`
+}
+
+// RuffResultCompact represents the compact output format for 'ruff check'.
+// It provides a summarized view optimized for token efficiency.
+type RuffResultCompact struct {
+	// TotalIssues is the total count of all lint issues.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one issue.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped issues by file in compact tuple format.
+	Results []FileIssueGroup `json:"results"`
+
+	// Truncated indicates how many issues were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
 }
 
 // RuffIssue represents a single Ruff issue.
@@ -139,12 +216,35 @@ type RuffIssue struct {
 
 // MypyResult represents the structured output of 'mypy'.
 // It captures type check success and any errors found.
+// Deprecated: Use MypyResultCompact for new code.
 type MypyResult struct {
 	// Success indicates whether type checking completed without errors.
 	Success bool `json:"success"`
 
 	// Errors contains the list of type errors found.
 	Errors []MypyError `json:"errors"`
+
+	// Summary contains the summary line from mypy output.
+	Summary string `json:"summary"`
+}
+
+// MypyResultCompact represents the compact output format for 'mypy'.
+// It provides a summarized view optimized for token efficiency.
+type MypyResultCompact struct {
+	// TotalIssues is the total count of all type errors.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one error.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped errors by file in compact tuple format.
+	Results []FileIssueGroup `json:"results"`
+
+	// Truncated indicates how many errors were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
 
 	// Summary contains the summary line from mypy output.
 	Summary string `json:"summary"`
@@ -167,3 +267,54 @@ type MypyError struct {
 	// Code is the optional mypy error code (e.g., "arg-type", "return-value").
 	Code string `json:"code,omitempty"`
 }
+
+// Severity level constants for linter issues.
+const (
+	// SeverityError indicates an error-level issue that must be fixed.
+	SeverityError = "error"
+
+	// SeverityWarning indicates a warning-level issue that should be addressed.
+	SeverityWarning = "warning"
+
+	// SeverityInfo indicates an informational issue.
+	SeverityInfo = "info"
+
+	// SeverityStyle indicates a style-related issue.
+	SeverityStyle = "style"
+)
+
+// Truncation limit constants for compact output format.
+const (
+	// MaxTotalIssues is the maximum number of total issues to include in compact output.
+	MaxTotalIssues = 200
+
+	// MaxIssuesPerFile is the maximum number of issues per file to include in compact output.
+	MaxIssuesPerFile = 20
+)
+
+// OutputCompact represents a compact format for linter output.
+// It provides a summarized view of lint issues optimized for token efficiency.
+type OutputCompact struct {
+	// TotalIssues is the total count of all lint issues.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one issue.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped issues by file in compact tuple format.
+	Results []FileIssueGroup `json:"results"`
+
+	// Truncated indicates how many issues were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
+}
+
+// FileIssueGroup represents a group of issues for a single file.
+// It is a tuple of [filename string, issue_count int, issues []IssueTuple].
+type FileIssueGroup [3]interface{}
+
+// IssueTuple represents a single lint issue in compact tuple format.
+// It is a tuple of [line int, severity string, message string, rule_id string].
+type IssueTuple [4]interface{}

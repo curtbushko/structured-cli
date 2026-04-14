@@ -5,6 +5,7 @@ package cargo
 
 // ClippyResult represents the structured output of 'cargo clippy --message-format=json'.
 // It captures lint warnings and errors from Clippy, the Rust linter.
+// Deprecated: Use ClippyResultCompact for new code.
 type ClippyResult struct {
 	// Success indicates whether clippy completed without errors.
 	Success bool `json:"success"`
@@ -15,6 +16,35 @@ type ClippyResult struct {
 	// Errors contains clippy lint errors.
 	Errors []ClippyDiagnostic `json:"errors"`
 }
+
+// ClippyResultCompact represents the compact output format for 'cargo clippy'.
+// It provides a summarized view optimized for token efficiency.
+type ClippyResultCompact struct {
+	// TotalIssues is the total count of all lint issues.
+	TotalIssues int `json:"total_issues"`
+
+	// FilesWithIssues is the count of files that have at least one issue.
+	FilesWithIssues int `json:"files_with_issues"`
+
+	// SeverityCounts maps severity levels to their counts.
+	SeverityCounts map[string]int `json:"severity_counts"`
+
+	// Results contains grouped issues by file in compact tuple format.
+	// Each ClippyFileIssueGroup is [filename, issue_count, issues].
+	// Each issue tuple is [line, severity, message, rule_id].
+	Results []ClippyFileIssueGroup `json:"results"`
+
+	// Truncated indicates how many issues were omitted due to truncation limits.
+	Truncated int `json:"truncated"`
+}
+
+// ClippyFileIssueGroup represents a group of issues for a single file.
+// It is a tuple of [filename string, issue_count int, issues []ClippyIssueTuple].
+type ClippyFileIssueGroup [3]interface{}
+
+// ClippyIssueTuple represents a single lint issue in compact tuple format.
+// It is a tuple of [line int, severity string, message string, rule_id string].
+type ClippyIssueTuple [4]interface{}
 
 // ClippyDiagnostic represents a single clippy diagnostic message.
 type ClippyDiagnostic struct {

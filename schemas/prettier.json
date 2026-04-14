@@ -8,14 +8,40 @@
       "type": "boolean",
       "description": "Whether all files are properly formatted"
     },
-    "unformatted": {
+    "total_checked": {
+      "type": "integer",
+      "description": "Total number of files checked"
+    },
+    "need_formatting": {
+      "type": "integer",
+      "description": "Count of files that need formatting"
+    },
+    "files": {
       "type": "array",
       "description": "List of files that need formatting",
       "items": {
         "type": "string",
-        "description": "Path to an unformatted file"
+        "description": "Path to a file that needs formatting"
       }
     }
   },
-  "required": ["success", "unformatted"]
+  "required": ["success", "total_checked", "need_formatting", "files"],
+  "description": "Compact output format for Prettier. Prettier checks are binary (formatted vs needs formatting), so a simple list of files suffices. No tuple format needed since there are no line-level issues.",
+  "examples": [
+    {
+      "success": false,
+      "total_checked": 5,
+      "need_formatting": 2,
+      "files": [
+        "src/index.js",
+        "src/components/Button.tsx"
+      ]
+    },
+    {
+      "success": true,
+      "total_checked": 10,
+      "need_formatting": 0,
+      "files": []
+    }
+  ]
 }

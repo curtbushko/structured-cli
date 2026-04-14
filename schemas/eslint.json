@@ -3,46 +3,95 @@
   "$id": "https://structured-cli.dev/schemas/eslint.json",
   "title": "ESLint Output",
   "type": "object",
+  "description": "Compact output format for ESLint optimized for token efficiency. Issues are grouped by file and represented as tuples to minimize JSON overhead.",
   "properties": {
-    "success": {
-      "type": "boolean",
-      "description": "Whether linting completed without issues"
+    "total_issues": {
+      "type": "integer",
+      "description": "Total count of all lint issues"
     },
-    "issues": {
-      "type": "array",
-      "description": "List of lint issues found",
-      "items": {
-        "type": "object",
-        "properties": {
-          "file": {
-            "type": "string",
-            "description": "The source file where the issue was found"
-          },
-          "line": {
-            "type": "integer",
-            "description": "The line number where the issue was found"
-          },
-          "column": {
-            "type": "integer",
-            "description": "The column number where the issue was found"
-          },
-          "severity": {
-            "type": "string",
-            "enum": ["error", "warning"],
-            "description": "The severity level of the issue"
-          },
-          "message": {
-            "type": "string",
-            "description": "The description of the issue"
-          },
-          "rule": {
-            "type": "string",
-            "description": "The ESLint rule that was violated"
-          }
-        },
-        "required": ["file", "line", "column", "severity", "message", "rule"]
+    "files_with_issues": {
+      "type": "integer",
+      "description": "Count of files with at least one issue"
+    },
+    "severity_counts": {
+      "type": "object",
+      "description": "Map of severity levels to their counts",
+      "additionalProperties": {
+        "type": "integer"
       }
+    },
+    "results": {
+      "type": "array",
+      "description": "Issues grouped by file in compact tuple format: [filename, issue_count, issues]",
+      "items": {
+        "type": "array",
+        "description": "File group: [filename, issue_count, issues]",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": [
+          {
+            "type": "string",
+            "description": "File path"
+          },
+          {
+            "type": "integer",
+            "description": "Number of issues in this file"
+          },
+          {
+            "type": "array",
+            "description": "Issues as tuples: [line, severity, message, rule]",
+            "items": {
+              "type": "array",
+              "description": "Issue tuple: [line, severity, message, rule]",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": [
+                {
+                  "type": "integer",
+                  "description": "Line number"
+                },
+                {
+                  "type": "string",
+                  "description": "Severity (error, warning)"
+                },
+                {
+                  "type": "string",
+                  "description": "Issue message"
+                },
+                {
+                  "type": "string",
+                  "description": "ESLint rule that was violated"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "truncated": {
+      "type": "integer",
+      "description": "Count of issues omitted due to truncation limits"
     }
   },
-  "required": ["success", "issues"]
+  "required": ["total_issues", "files_with_issues", "severity_counts", "results", "truncated"],
+  "examples": [
+    {
+      "total_issues": 3,
+      "files_with_issues": 2,
+      "severity_counts": {
+        "error": 2,
+        "warning": 1
+      },
+      "results": [
+        ["src/index.js", 2, [
+          [10, "error", "Unexpected var, use let or const instead", "no-var"],
+          [15, "warning", "Missing semicolon", "semi"]
+        ]],
+        ["src/utils.js", 1, [
+          [5, "error", "'foo' is defined but never used", "no-unused-vars"]
+        ]]
+      ],
+      "truncated": 0
+    }
+  ]
 }
