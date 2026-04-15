@@ -24,11 +24,12 @@ func TestStatsCommand_ByFilter(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert records with different filters
+	// Use token values with savings > 100 to avoid small savings filter
 	smallFilter := domain.NewCommandRecordWithFilters(
-		"git", []string{"status"}, 100, 20, time.Second, "/project", []string{"small"},
+		"git", []string{"status"}, 500, 100, time.Second, "/project", []string{"small"},
 	)
 	successFilter := domain.NewCommandRecordWithFilters(
-		"go", []string{"test"}, 200, 50, time.Second, "/project", []string{"success"},
+		"go", []string{"test"}, 600, 100, time.Second, "/project", []string{"success"},
 	)
 
 	for i := 0; i < 3; i++ {
@@ -100,9 +101,10 @@ func TestStatsCommand_SummaryShowsFilteredCount(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert one unfiltered and one filtered record
-	unfiltered := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	// Use token values with savings > 100 to avoid small savings filter
+	unfiltered := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 	filtered := domain.NewCommandRecordWithFilters(
-		"git", []string{"status"}, 100, 20, time.Second, "/project", []string{"small"},
+		"git", []string{"status"}, 600, 100, time.Second, "/project", []string{"small"},
 	)
 
 	if err := tracker.Record(ctx, unfiltered); err != nil {

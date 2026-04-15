@@ -20,6 +20,13 @@ const defaultRetention = 90 * 24 * time.Hour
 // defaultHistoryLimit is the default number of records to return in History.
 const defaultHistoryLimit = 100
 
+// Token savings threshold for display filtering:
+// The SQL queries in this file use a threshold of |tokens_saved| > 100 to filter
+// records for display. Records with negligible savings (|tokens_saved| <= 100) are
+// excluded from Stats, StatsByParser, StatsByFilter, and History results.
+// This threshold is applied only on retrieval - all commands are still recorded
+// to preserve complete data. The value 100 tokens represents roughly 75 words of text.
+
 // SQL statements for schema creation.
 const createCommandsTableSQL = `
 CREATE TABLE IF NOT EXISTS commands (
@@ -73,6 +80,7 @@ const selectHistorySQL = `
 SELECT id, command, subcommands, raw_tokens, parsed_tokens, tokens_saved,
        savings_percent, execution_time_ns, timestamp, project, filters_applied
 FROM commands
+WHERE tokens_saved > 100 OR tokens_saved < -100
 ORDER BY timestamp DESC
 LIMIT ?`
 
@@ -83,6 +91,7 @@ SELECT
 	COALESCE(SUM(tokens_saved), 0) as total_tokens_saved,
 	COALESCE(AVG(execution_time_ns), 0) as avg_execution_time_ns
 FROM commands
+WHERE tokens_saved > 100 OR tokens_saved < -100
 GROUP BY command, subcommands
 ORDER BY invocation_count DESC`
 
@@ -92,6 +101,7 @@ const cleanupParseFailuresSQL = `DELETE FROM parse_failures WHERE timestamp < ?`
 
 // selectStatsByFilterSQL returns per-filter statistics.
 // It uses a WITH clause to split comma-separated filter names and aggregate.
+// Only includes records where tokens_saved > 100 OR tokens_saved < -100.
 const selectStatsByFilterSQL = `
 WITH RECURSIVE split_filters AS (
 	SELECT
@@ -101,6 +111,7 @@ WITH RECURSIVE split_filters AS (
 		SUBSTR(filters_applied || ',', INSTR(filters_applied || ',', ',') + 1) AS remaining
 	FROM commands
 	WHERE filters_applied != ''
+		AND (tokens_saved > 100 OR tokens_saved < -100)
 	UNION ALL
 	SELECT
 		id,
@@ -167,6 +178,10 @@ func NewSQLiteTrackerWithContext(ctx context.Context, path string) (*SQLiteTrack
 }
 
 // Record stores a command execution record and triggers auto-cleanup.
+// All commands are recorded regardless of token savings - filtering is applied
+// only when retrieving data for display (Stats, StatsByParser, History, etc.).
+// This "record all, filter on display" approach preserves complete data for
+// potential future analysis while keeping displayed statistics meaningful.
 func (t *SQLiteTracker) Record(ctx context.Context, record domain.CommandRecord) error {
 	// Auto-cleanup old records first - ignore errors as cleanup is best-effort
 	_ = t.Cleanup(ctx, defaultRetention)
@@ -204,11 +219,17 @@ func (t *SQLiteTracker) RecordFailure(ctx context.Context, failure domain.ParseF
 }
 
 // Stats returns aggregated usage statistics.
+// Results are filtered to only include records where |tokens_saved| > 100,
+// excluding commands with negligible impact from the displayed statistics.
+// This keeps the stats meaningful by focusing on commands that actually
+// provide value (positive savings) or identify issues (negative savings).
 func (t *SQLiteTracker) Stats(ctx context.Context, opts ports.StatsOptions) (domain.StatsSummary, error) {
 	query := selectStatsSQL
 	var args []any
 
-	var conditions []string
+	// Always filter to records with meaningful token savings (> 100 or < -100)
+	conditions := []string{"(tokens_saved > 100 OR tokens_saved < -100)"}
+
 	if opts.Project != "" {
 		conditions = append(conditions, "project = ?")
 		args = append(args, opts.Project)
@@ -218,9 +239,7 @@ func (t *SQLiteTracker) Stats(ctx context.Context, opts ports.StatsOptions) (dom
 		args = append(args, opts.Since)
 	}
 
-	if len(conditions) > 0 {
-		query += " WHERE " + strings.Join(conditions, " AND ")
-	}
+	query += " WHERE " + strings.Join(conditions, " AND ")
 
 	var totalCommands int
 	var totalTokensSaved int
@@ -249,6 +268,8 @@ func (t *SQLiteTracker) Stats(ctx context.Context, opts ports.StatsOptions) (dom
 }
 
 // History returns the most recent command records.
+// Results are filtered to only include records where |tokens_saved| > 100,
+// excluding commands with negligible token savings from the history display.
 func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.CommandRecord, error) {
 	if limit <= 0 {
 		limit = defaultHistoryLimit
@@ -305,7 +326,9 @@ func (t *SQLiteTracker) History(ctx context.Context, limit int) ([]domain.Comman
 	return records, rows.Err()
 }
 
-// StatsByParser returns per-parser statistics.
+// StatsByParser returns per-parser statistics grouped by command/subcommand.
+// Results are filtered to only include records where |tokens_saved| > 100,
+// excluding commands with negligible token savings from per-parser statistics.
 func (t *SQLiteTracker) StatsByParser(ctx context.Context) ([]domain.CommandStats, error) {
 	rows, err := t.db.QueryContext(ctx, selectStatsByParserSQL)
 	if err != nil {
@@ -334,7 +357,10 @@ func (t *SQLiteTracker) StatsByParser(ctx context.Context) ([]domain.CommandStat
 	return stats, rows.Err()
 }
 
-// StatsByFilter returns per-filter statistics.
+// StatsByFilter returns per-filter statistics showing how often each filter
+// is activated and its total token savings contribution.
+// Results are filtered to only include records where |tokens_saved| > 100,
+// excluding commands with negligible token savings from per-filter statistics.
 func (t *SQLiteTracker) StatsByFilter(ctx context.Context) ([]domain.FilterStats, error) {
 	rows, err := t.db.QueryContext(ctx, selectStatsByFilterSQL)
 	if err != nil {
@@ -386,4 +412,12 @@ func (t *SQLiteTracker) UpdateTimestampForTest(ctx context.Context, ago time.Dur
 	oldTime := time.Now().Add(-ago)
 	_, err := t.db.ExecContext(ctx, "UPDATE commands SET timestamp = ?", oldTime)
 	return err
+}
+
+// CountAllRecordsForTest is a test helper that returns the total number of records
+// in the database without any filtering. This is only exported for testing.
+func (t *SQLiteTracker) CountAllRecordsForTest(ctx context.Context) (int, error) {
+	var count int
+	err := t.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM commands").Scan(&count)
+	return count, err
 }

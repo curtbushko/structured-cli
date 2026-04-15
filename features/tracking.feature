@@ -24,14 +24,13 @@ Feature: Usage Tracking
     When I run "structured-cli stats"
     Then the exit code should be 0
     And the output should contain "Tokens Saved:"
-    And the output should contain "10"
+    And the output should contain "Token Savings"
 
-  Scenario: Stats --history shows recent commands
+  Scenario: Stats --history with no significant savings
     Given I have a tracking database with 10 recorded commands
     When I run "structured-cli stats --history"
     Then the exit code should be 0
-    And the output should contain "Recent Command History"
-    And the output should contain "TIMESTAMP"
+    And the output should contain "No command history found."
 
   Scenario: Stats --json outputs valid JSON
     Given I have a tracking database with 10 recorded commands

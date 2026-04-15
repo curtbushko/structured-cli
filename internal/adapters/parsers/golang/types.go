@@ -43,6 +43,12 @@ type TestResult struct {
 	// Skipped is the total number of tests that were skipped.
 	Skipped int `json:"skipped"`
 
+	// PackagesPassed is the total number of packages that passed (ok status).
+	PackagesPassed int `json:"packages_passed"`
+
+	// PackagesFailed is the total number of packages that failed.
+	PackagesFailed int `json:"packages_failed"`
+
 	// Packages contains per-package test results.
 	Packages []TestPackage `json:"packages"`
 
@@ -58,6 +64,9 @@ type TestPackage struct {
 
 	// Passed indicates whether all tests in the package passed.
 	Passed bool `json:"passed"`
+
+	// Cached indicates whether the test results came from cache.
+	Cached bool `json:"cached,omitempty"`
 
 	// Elapsed is the time in seconds taken to run the package tests.
 	Elapsed float64 `json:"elapsed"`

@@ -239,3 +239,258 @@ func TestImagesParser_Schema(t *testing.T) {
 		}
 	}
 }
+
+func TestImagesParser_VaryingColumnWidths(t *testing.T) {
+	// Real docker images output with varying repository name lengths
+	// Column positions are determined by the header
+	input := `REPOSITORY                                      TAG       IMAGE ID       CREATED         SIZE
+nginx                                           latest    abc123def456   2 weeks ago     142MB
+gcr.io/my-project/my-very-long-image-name       v1.2.3    def789abc012   3 months ago    256MB
+redis                                           alpine    ghi456def789   About an hour ago   32.4MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	if result.Error != nil {
+		t.Fatalf("ParseResult.Error = %v, want nil", result.Error)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	// Must parse all 3 images - this is the bug: images may be missing
+	if len(got.Images) != 3 {
+		t.Fatalf("ImagesResult.Images length = %d, want 3 - images are missing!", len(got.Images))
+	}
+
+	// Verify each image is correctly parsed
+	expected := []Image{
+		{Repository: "nginx", Tag: "latest", ID: "abc123def456", Created: "2 weeks ago", Size: "142MB"},
+		{Repository: "gcr.io/my-project/my-very-long-image-name", Tag: "v1.2.3", ID: "def789abc012", Created: "3 months ago", Size: "256MB"},
+		{Repository: "redis", Tag: "alpine", ID: "ghi456def789", Created: "About an hour ago", Size: "32.4MB"},
+	}
+
+	for i, want := range expected {
+		if got.Images[i].Repository != want.Repository {
+			t.Errorf("Image[%d].Repository = %q, want %q", i, got.Images[i].Repository, want.Repository)
+		}
+		if got.Images[i].Tag != want.Tag {
+			t.Errorf("Image[%d].Tag = %q, want %q", i, got.Images[i].Tag, want.Tag)
+		}
+		if got.Images[i].ID != want.ID {
+			t.Errorf("Image[%d].ID = %q, want %q", i, got.Images[i].ID, want.ID)
+		}
+		if got.Images[i].Created != want.Created {
+			t.Errorf("Image[%d].Created = %q, want %q", i, got.Images[i].Created, want.Created)
+		}
+		if got.Images[i].Size != want.Size {
+			t.Errorf("Image[%d].Size = %q, want %q", i, got.Images[i].Size, want.Size)
+		}
+	}
+}
+
+func TestImagesParser_ShortIDs(t *testing.T) {
+	// Docker can show short image IDs (12 chars) or full IDs
+	input := `REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+nginx        latest    abc123def456   2 weeks ago    142MB
+redis        alpine    def789       3 weeks ago    32.4MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	if len(got.Images) != 2 {
+		t.Fatalf("ImagesResult.Images length = %d, want 2", len(got.Images))
+	}
+
+	// Second image has a short ID
+	if got.Images[1].ID != "def789" {
+		t.Errorf("Image[1].ID = %q, want %q", got.Images[1].ID, "def789")
+	}
+}
+
+func TestImagesParser_LongCreatedDates(t *testing.T) {
+	// Test multi-word Created dates like "About an hour ago", "Less than a second ago"
+	input := `REPOSITORY   TAG       IMAGE ID       CREATED                   SIZE
+nginx        latest    abc123def456   About an hour ago         142MB
+redis        alpine    def789abc012   Less than a second ago    32.4MB
+postgres     14        ghi456def789   3 months ago              379MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	if len(got.Images) != 3 {
+		t.Fatalf("ImagesResult.Images length = %d, want 3", len(got.Images))
+	}
+
+	// Verify Created field captures all date components
+	expectedCreated := []string{
+		"About an hour ago",
+		"Less than a second ago",
+		"3 months ago",
+	}
+
+	for i, want := range expectedCreated {
+		if got.Images[i].Created != want {
+			t.Errorf("Image[%d].Created = %q, want %q", i, got.Images[i].Created, want)
+		}
+	}
+}
+
+func TestImagesParser_ColumnBasedParsing(t *testing.T) {
+	// Test with exact docker images output format using column positions
+	// The header determines column positions - some outputs use fixed-width columns
+	input := `REPOSITORY                                              TAG       IMAGE ID       CREATED        SIZE
+bender                                                  latest    f6036cbdc4ad   2 weeks ago    18.1MB
+ghcr.io/curtbushko/minecraft-servers/dj-server          latest    0aea42cd4c12   3 weeks ago    813MB
+ghcr.io/curtbushko/minecraft-servers/homestead          latest    a0650662d3d2   4 weeks ago    774MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	// All 3 images must be parsed
+	if len(got.Images) != 3 {
+		t.Fatalf("ImagesResult.Images length = %d, want 3 - images are missing!", len(got.Images))
+	}
+
+	// Verify the long repository names are parsed correctly
+	if got.Images[1].Repository != "ghcr.io/curtbushko/minecraft-servers/dj-server" {
+		t.Errorf("Image[1].Repository = %q, want %q", got.Images[1].Repository, "ghcr.io/curtbushko/minecraft-servers/dj-server")
+	}
+	if got.Images[2].Repository != "ghcr.io/curtbushko/minecraft-servers/homestead" {
+		t.Errorf("Image[2].Repository = %q, want %q", got.Images[2].Repository, "ghcr.io/curtbushko/minecraft-servers/homestead")
+	}
+}
+
+func TestImagesParser_MinimalParts(t *testing.T) {
+	// Test case where parsing might fail due to insufficient parts
+	// This tests when an image line has fewer than expected parts
+	input := `REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+nginx        latest    abc123def456   now            142MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	// Image with single-word Created should still be parsed
+	if len(got.Images) != 1 {
+		t.Fatalf("ImagesResult.Images length = %d, want 1", len(got.Images))
+	}
+
+	if got.Images[0].Created != "now" {
+		t.Errorf("Image[0].Created = %q, want %q", got.Images[0].Created, "now")
+	}
+}
+
+func TestImagesParser_FourPartLine(t *testing.T) {
+	// Test case where line splits into exactly 4 parts
+	// This should NOT result in a missing image (bug case)
+	// Parts: [nginx, latest, abc123, 142MB] - missing Created entirely
+	// The current code requires 5+ parts, so this would be skipped
+	input := `REPOSITORY   TAG       IMAGE ID   SIZE
+nginx        latest    abc123     142MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	// Image should still be parsed even without Created column
+	if len(got.Images) != 1 {
+		t.Fatalf("ImagesResult.Images length = %d, want 1 - image is missing!", len(got.Images))
+	}
+
+	if got.Images[0].Repository != "nginx" {
+		t.Errorf("Image[0].Repository = %q, want %q", got.Images[0].Repository, "nginx")
+	}
+}
+
+func TestImagesParser_NoTruncOutput(t *testing.T) {
+	// Test docker images --no-trunc output with full image IDs
+	input := `REPOSITORY   TAG       IMAGE ID                                                                  CREATED        SIZE
+nginx        latest    sha256:abc123def456789012345678901234567890123456789012345678901234567890   2 weeks ago    142MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	if len(got.Images) != 1 {
+		t.Fatalf("ImagesResult.Images length = %d, want 1", len(got.Images))
+	}
+
+	// Full image ID should be captured
+	expectedID := "sha256:abc123def456789012345678901234567890123456789012345678901234567890"
+	if got.Images[0].ID != expectedID {
+		t.Errorf("Image[0].ID = %q, want %q", got.Images[0].ID, expectedID)
+	}
+}
+
+func TestImagesParser_DigestOutput(t *testing.T) {
+	// Test docker images --digests output which includes DIGEST column
+	input := `REPOSITORY   TAG       DIGEST                                                                    IMAGE ID       CREATED        SIZE
+nginx        latest    sha256:abc123def456789012345678901234567890123456789012345678901234567890   def456abc123   2 weeks ago    142MB`
+
+	parser := NewImagesParser()
+	result, err := parser.Parse(strings.NewReader(input))
+	if err != nil {
+		t.Fatalf("Parse() returned error: %v", err)
+	}
+
+	got, ok := result.Data.(*ImagesResult)
+	if !ok {
+		t.Fatalf("ParseResult.Data type = %T, want *ImagesResult", result.Data)
+	}
+
+	// Image should be parsed even with extra DIGEST column
+	if len(got.Images) != 1 {
+		t.Fatalf("ImagesResult.Images length = %d, want 1 - image is missing!", len(got.Images))
+	}
+}

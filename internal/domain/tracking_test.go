@@ -134,6 +134,64 @@ func TestEstimateTokens(t *testing.T) {
 	}
 }
 
+func TestEstimateTokens_MultiLineText(t *testing.T) {
+	// Multi-line text should count newlines as contributing to tokens.
+	// LLM tokenizers typically treat newlines as separate tokens.
+	// The estimation should reflect this by counting newlines.
+
+	tests := []struct {
+		name        string
+		input       string
+		minExpected int // minimum expected tokens (newlines should add to count)
+	}{
+		{
+			name: "multi-line text with 5 newlines",
+			// "line1\nline2\nline3\nline4\nline5\n" = 30 bytes total (25 chars + 5 newlines)
+			// Base tokens: 30/4 = 7 tokens
+			// Newline tokens: 5
+			// Total: 7 + 5 = 12 tokens
+			input:       "line1\nline2\nline3\nline4\nline5\n",
+			minExpected: 12, // base tokens + newlines
+		},
+		{
+			name: "multi-line text with 10 newlines",
+			// 10 lines of "lineN\n" where N is 1-9 (5 chars each) + "line10\n" (7 chars)
+			// Total: 9*6 + 7 = 61 chars = 61 bytes with 10 newlines
+			// Without newline counting: 61/4 = 15 tokens
+			// With newline counting: 15 + 10 = 25 tokens minimum
+			input:       "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10\n",
+			minExpected: 25, // base tokens + newlines
+		},
+		{
+			name: "single line no newline",
+			// No newlines, so just regular char/4 estimation
+			input:       "single line text here",
+			minExpected: 5, // 21 chars / 4 = 5
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := EstimateTokens(tt.input)
+			if got < tt.minExpected {
+				t.Errorf("EstimateTokens() = %v, want at least %v (input has %d newlines)",
+					got, tt.minExpected, testCountNewlines(tt.input))
+			}
+		})
+	}
+}
+
+// testCountNewlines counts the number of newline characters in a string (test helper).
+func testCountNewlines(s string) int {
+	count := 0
+	for _, c := range s {
+		if c == '\n' {
+			count++
+		}
+	}
+	return count
+}
+
 func TestNewParseFailure(t *testing.T) {
 	tests := []struct {
 		name            string

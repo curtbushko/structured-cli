@@ -110,10 +110,13 @@ func parseTableImagesOutput(output string, result *ImagesResult) {
 // parseImageLine parses a single line from docker images table output.
 func parseImageLine(line string) Image {
 	// Docker images output is column-based
-	// REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+	// Standard format: REPOSITORY   TAG       IMAGE ID       CREATED        SIZE
+	// Minimal format:  REPOSITORY   TAG       IMAGE ID       SIZE (no CREATED)
 
 	parts := splitBySpaces(line)
-	if len(parts) < 5 {
+
+	// Minimum 4 parts: REPOSITORY, TAG, IMAGE ID, SIZE
+	if len(parts) < 4 {
 		return Image{}
 	}
 
@@ -123,12 +126,13 @@ func parseImageLine(line string) Image {
 		ID:         parts[2],
 	}
 
-	// Created and Size are at the end - need to handle "X time ago" format
-	// Work backwards from the end
+	// Size is always the last part
 	image.Size = parts[len(parts)-1]
 
-	// Created is everything between ID and Size
-	if len(parts) >= 5 {
+	// Created is everything between ID and Size (if present)
+	// With 4 parts: no Created field (parts[3] is Size)
+	// With 5+ parts: Created is parts[3:len-1]
+	if len(parts) > 4 {
 		createdParts := parts[3 : len(parts)-1]
 		image.Created = strings.Join(createdParts, " ")
 	}

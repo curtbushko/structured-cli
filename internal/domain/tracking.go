@@ -90,10 +90,31 @@ func NewCommandRecordWithFilters(
 	}
 }
 
-// EstimateTokens estimates the number of tokens in a string using the chars/4 heuristic.
-// This is a rough approximation commonly used for LLM token estimation.
+// EstimateTokens estimates the number of tokens in a string using the chars/4 heuristic,
+// with additional counting for newlines. LLM tokenizers typically treat newlines as
+// separate tokens, so this provides more accurate estimation for multi-line text.
+// This is important for calculating token savings when comparing multi-line CLI output
+// to compact JSON output.
 func EstimateTokens(s string) int {
-	return len(s) / 4
+	// Base estimation: chars / 4
+	baseTokens := len(s) / 4
+
+	// Count newlines as additional tokens since LLM tokenizers typically
+	// treat newlines as separate tokens
+	newlineTokens := countNewlines(s)
+
+	return baseTokens + newlineTokens
+}
+
+// countNewlines counts the number of newline characters in a string.
+func countNewlines(s string) int {
+	count := 0
+	for _, c := range s {
+		if c == '\n' {
+			count++
+		}
+	}
+	return count
 }
 
 // ParseFailure represents a failed parse attempt for tracking and debugging.

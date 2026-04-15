@@ -2,6 +2,8 @@ package tracking_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +24,7 @@ func TestSQLiteTracker_Record(t *testing.T) {
 	deferClose(t, tracker)
 
 	ctx := context.Background()
-	record := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	record := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 
 	err = tracker.Record(ctx, record)
 
@@ -71,7 +73,7 @@ func TestSQLiteTracker_Stats(t *testing.T) {
 
 	// Insert 5 records
 	for i := 0; i < 5; i++ {
-		record := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+		record := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 		recordErr := tracker.Record(ctx, record)
 		if recordErr != nil {
 			t.Fatalf("Record() error = %v", recordErr)
@@ -86,9 +88,9 @@ func TestSQLiteTracker_Stats(t *testing.T) {
 	if stats.TotalCommands != 5 {
 		t.Errorf("Stats().TotalCommands = %d, want 5", stats.TotalCommands)
 	}
-	// Each record saves 50 tokens (100 - 50)
-	if stats.TotalTokensSaved != 250 {
-		t.Errorf("Stats().TotalTokensSaved = %d, want 250", stats.TotalTokensSaved)
+	// Each record saves 400 tokens (500 - 100)
+	if stats.TotalTokensSaved != 2000 {
+		t.Errorf("Stats().TotalTokensSaved = %d, want 2000", stats.TotalTokensSaved)
 	}
 }
 
@@ -102,9 +104,9 @@ func TestSQLiteTracker_Stats_Project(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert records for different projects
-	record1 := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/projectA")
-	record2 := domain.NewCommandRecord("git", []string{"diff"}, 200, 100, time.Second, "/projectA")
-	record3 := domain.NewCommandRecord("git", []string{"log"}, 300, 150, time.Second, "/projectB")
+	record1 := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/projectA")
+	record2 := domain.NewCommandRecord("git", []string{"diff"}, 600, 100, time.Second, "/projectA")
+	record3 := domain.NewCommandRecord("git", []string{"log"}, 700, 100, time.Second, "/projectB")
 
 	mustRecord(t, tracker, ctx, record1)
 	mustRecord(t, tracker, ctx, record2)
@@ -119,9 +121,9 @@ func TestSQLiteTracker_Stats_Project(t *testing.T) {
 	if stats.TotalCommands != 2 {
 		t.Errorf("Stats().TotalCommands = %d, want 2", stats.TotalCommands)
 	}
-	// 50 + 100 = 150
-	if stats.TotalTokensSaved != 150 {
-		t.Errorf("Stats().TotalTokensSaved = %d, want 150", stats.TotalTokensSaved)
+	// 400 + 500 = 900
+	if stats.TotalTokensSaved != 900 {
+		t.Errorf("Stats().TotalTokensSaved = %d, want 900", stats.TotalTokensSaved)
 	}
 }
 
@@ -136,7 +138,7 @@ func TestSQLiteTracker_History(t *testing.T) {
 
 	// Insert 10 records
 	for i := 0; i < 10; i++ {
-		record := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+		record := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 		recordErr := tracker.Record(ctx, record)
 		if recordErr != nil {
 			t.Fatalf("Record() error = %v", recordErr)
@@ -165,7 +167,7 @@ func TestSQLiteTracker_History_DefaultLimit(t *testing.T) {
 
 	// Insert some records
 	for i := 0; i < 5; i++ {
-		record := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+		record := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 		recordErr := tracker.Record(ctx, record)
 		if recordErr != nil {
 			t.Fatalf("Record() error = %v", recordErr)
@@ -193,9 +195,9 @@ func TestSQLiteTracker_StatsByParser(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert records with different commands
-	gitStatus := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
-	gitDiff := domain.NewCommandRecord("git", []string{"diff"}, 200, 100, time.Second, "/project")
-	kubectl := domain.NewCommandRecord("kubectl", []string{"get"}, 300, 150, time.Second, "/project")
+	gitStatus := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
+	gitDiff := domain.NewCommandRecord("git", []string{"diff"}, 600, 100, time.Second, "/project")
+	kubectl := domain.NewCommandRecord("kubectl", []string{"get"}, 700, 100, time.Second, "/project")
 
 	// 3 git-status, 2 git-diff, 1 kubectl-get
 	for i := 0; i < 3; i++ {
@@ -233,16 +235,15 @@ func TestSQLiteTracker_Cleanup(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Insert a record with old timestamp by directly manipulating
-	// For this test, we need to insert directly with raw SQL
-	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	// Insert a record with old timestamp
+	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, oldRecord)
 
 	// Update the timestamp to be old (91 days ago)
 	mustUpdateTimestamp(t, tracker, ctx, 91*24*time.Hour)
 
 	// Add a new record
-	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 200, 100, time.Second, "/project")
+	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 600, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, newRecord)
 
 	// Cleanup old records (90 days retention)
@@ -271,14 +272,14 @@ func TestSQLiteTracker_AutoCleanup(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert a record
-	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, oldRecord)
 
 	// Update the timestamp to be old (91 days ago)
 	mustUpdateTimestamp(t, tracker, ctx, 91*24*time.Hour)
 
 	// Insert a new record - this should trigger auto-cleanup
-	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 200, 100, time.Second, "/project")
+	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 600, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, newRecord)
 
 	// Verify only new record remains (old one cleaned up)
@@ -304,7 +305,7 @@ func TestSQLiteTracker_CreatesDatabaseDir(t *testing.T) {
 
 	// Verify tracker works
 	ctx := context.Background()
-	record := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	record := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 	recordErr := tracker.Record(ctx, record)
 	if recordErr != nil {
 		t.Errorf("Record() error = %v", recordErr)
@@ -334,14 +335,14 @@ func TestSQLiteTracker_Stats_Since(t *testing.T) {
 	ctx := context.Background()
 
 	// Insert a record
-	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 100, 50, time.Second, "/project")
+	oldRecord := domain.NewCommandRecord("git", []string{"status"}, 500, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, oldRecord)
 
 	// Update timestamp to be 10 days ago
 	mustUpdateTimestamp(t, tracker, ctx, 10*24*time.Hour)
 
 	// Insert another record (now)
-	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 200, 100, time.Second, "/project")
+	newRecord := domain.NewCommandRecord("git", []string{"diff"}, 600, 100, time.Second, "/project")
 	mustRecord(t, tracker, ctx, newRecord)
 
 	// Filter since 5 days ago - should only get the new record
@@ -380,4 +381,257 @@ func deferClose(t *testing.T, tracker *tracking.SQLiteTracker) {
 			t.Errorf("Close() error = %v", err)
 		}
 	})
+}
+
+func TestSQLiteTracker_MultiLineTextTokens(t *testing.T) {
+	tracker, err := tracking.NewSQLiteTracker(":memory:")
+	if err != nil {
+		t.Fatalf("NewSQLiteTracker() error = %v", err)
+	}
+	deferClose(t, tracker)
+
+	ctx := context.Background()
+
+	// Simulate multi-line go test output
+	var sb strings.Builder
+	for i := 1; i <= 50; i++ {
+		fmt.Fprintf(&sb, "line%02d\n", i)
+	}
+	multiLineRaw := sb.String()
+	multiLineRawTokens := domain.EstimateTokens(multiLineRaw)
+
+	// Parsed JSON is compact
+	compactJSON := `{"lines":50}`
+	compactJSONTokens := domain.EstimateTokens(compactJSON)
+
+	// Create record with the calculated tokens
+	record := domain.NewCommandRecord("go", []string{"test"}, multiLineRawTokens, compactJSONTokens, time.Second, "/project")
+
+	err = tracker.Record(ctx, record)
+	if err != nil {
+		t.Errorf("Record() error = %v, want nil", err)
+	}
+
+	// Verify the record was stored correctly
+	history, err := tracker.History(ctx, 1)
+	if err != nil {
+		t.Fatalf("History() error = %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("History() returned %d records, want 1", len(history))
+	}
+
+	// Verify token counts are stored as calculated
+	if history[0].RawTokens != multiLineRawTokens {
+		t.Errorf("RawTokens = %d, want %d", history[0].RawTokens, multiLineRawTokens)
+	}
+	if history[0].ParsedTokens != compactJSONTokens {
+		t.Errorf("ParsedTokens = %d, want %d", history[0].ParsedTokens, compactJSONTokens)
+	}
+
+	// TokensSaved should be positive and > 100 (raw > parsed for multi-line text)
+	expectedSaved := multiLineRawTokens - compactJSONTokens
+	if history[0].TokensSaved != expectedSaved {
+		t.Errorf("TokensSaved = %d, want %d", history[0].TokensSaved, expectedSaved)
+	}
+	if history[0].TokensSaved <= 100 {
+		t.Errorf("TokensSaved = %d, should be > 100 for multi-line text", history[0].TokensSaved)
+	}
+}
+
+func TestSQLiteTracker_JSONLineTokens(t *testing.T) {
+	tracker, err := tracking.NewSQLiteTracker(":memory:")
+	if err != nil {
+		t.Fatalf("NewSQLiteTracker() error = %v", err)
+	}
+	deferClose(t, tracker)
+
+	ctx := context.Background()
+
+	// Simulate JSON-line output (like go test -json) - multiple JSON lines
+	var sb strings.Builder
+	for i := 0; i < 20; i++ {
+		sb.WriteString(`{"action":"output","package":"pkg","test":"TestExample","output":"test output line"}`)
+		sb.WriteByte('\n')
+	}
+	jsonLineRaw := sb.String()
+	jsonLineRawTokens := domain.EstimateTokens(jsonLineRaw)
+
+	// Parsed result is aggregated compact JSON
+	compactJSON := `{"passed":1,"failed":0,"packages":["pkg"]}`
+	compactJSONTokens := domain.EstimateTokens(compactJSON)
+
+	// Create record with the calculated tokens
+	record := domain.NewCommandRecord("go", []string{"test"}, jsonLineRawTokens, compactJSONTokens, time.Second, "/project")
+
+	err = tracker.Record(ctx, record)
+	if err != nil {
+		t.Errorf("Record() error = %v, want nil", err)
+	}
+
+	// Verify the record was stored correctly
+	history, err := tracker.History(ctx, 1)
+	if err != nil {
+		t.Fatalf("History() error = %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("History() returned %d records, want 1", len(history))
+	}
+
+	// Verify token counts are stored as calculated
+	if history[0].RawTokens != jsonLineRawTokens {
+		t.Errorf("RawTokens = %d, want %d", history[0].RawTokens, jsonLineRawTokens)
+	}
+	if history[0].ParsedTokens != compactJSONTokens {
+		t.Errorf("ParsedTokens = %d, want %d", history[0].ParsedTokens, compactJSONTokens)
+	}
+
+	// TokensSaved should be positive and > 100 (raw JSON lines > compact aggregated JSON)
+	expectedSaved := jsonLineRawTokens - compactJSONTokens
+	if history[0].TokensSaved != expectedSaved {
+		t.Errorf("TokensSaved = %d, want %d", history[0].TokensSaved, expectedSaved)
+	}
+	if history[0].TokensSaved <= 100 {
+		t.Errorf("TokensSaved = %d, should be > 100 for JSON line output", history[0].TokensSaved)
+	}
+}
+
+func TestSQLiteTracker_RecordAllSavings(t *testing.T) {
+	tracker, err := tracking.NewSQLiteTracker(":memory:")
+	if err != nil {
+		t.Fatalf("NewSQLiteTracker() error = %v", err)
+	}
+	deferClose(t, tracker)
+
+	ctx := context.Background()
+
+	// Test cases: all token savings should be recorded regardless of size
+	// TokensSaved = RawTokens - ParsedTokens
+	// Note: History() now filters to only show records with |tokens_saved| > 100
+	testCases := []struct {
+		name         string
+		rawTokens    int
+		parsedTokens int
+	}{
+		{"zero savings", 100, 100},
+		{"positive 50", 150, 100},
+		{"positive 100", 200, 100},
+		{"negative 50", 100, 150},
+		{"negative 100", 100, 200},
+	}
+
+	for _, tc := range testCases {
+		record := domain.NewCommandRecord("git", []string{"status"}, tc.rawTokens, tc.parsedTokens, time.Second, "/project")
+		err = tracker.Record(ctx, record)
+		if err != nil {
+			t.Fatalf("Record() error for %s = %v", tc.name, err)
+		}
+	}
+
+	// History now filters to records with meaningful token savings (|tokens_saved| > 100)
+	// None of these records have |tokens_saved| > 100, so History should return 0
+	history, err := tracker.History(ctx, 10)
+	if err != nil {
+		t.Fatalf("History() error = %v", err)
+	}
+	if len(history) != 0 {
+		t.Errorf("History() returned %d records, want 0 (no records with |tokens_saved| > 100)", len(history))
+	}
+}
+
+func TestSQLiteTracker_RecordLargeSavings(t *testing.T) {
+	tracker, err := tracking.NewSQLiteTracker(":memory:")
+	if err != nil {
+		t.Fatalf("NewSQLiteTracker() error = %v", err)
+	}
+	deferClose(t, tracker)
+
+	ctx := context.Background()
+
+	// Test cases: all token savings should be recorded
+	testCases := []struct {
+		name         string
+		rawTokens    int
+		parsedTokens int
+	}{
+		{"positive 101", 201, 100},
+		{"positive 500", 600, 100},
+		{"negative 101", 100, 201},
+	}
+
+	for _, tc := range testCases {
+		record := domain.NewCommandRecord("git", []string{"status"}, tc.rawTokens, tc.parsedTokens, time.Second, "/project")
+		err = tracker.Record(ctx, record)
+		if err != nil {
+			t.Fatalf("Record() error for %s = %v", tc.name, err)
+		}
+	}
+
+	// Verify all records were stored
+	history, err := tracker.History(ctx, 10)
+	if err != nil {
+		t.Fatalf("History() error = %v", err)
+	}
+	if len(history) != 3 {
+		t.Errorf("History() returned %d records, want 3", len(history))
+	}
+}
+
+func TestSQLiteTracker_RecordBoundaryConditions(t *testing.T) {
+	tracker, err := tracking.NewSQLiteTracker(":memory:")
+	if err != nil {
+		t.Fatalf("NewSQLiteTracker() error = %v", err)
+	}
+	deferClose(t, tracker)
+
+	ctx := context.Background()
+
+	// All records should be stored regardless of savings value
+	// Note: History() now filters to only show records with |tokens_saved| > 100
+	testCases := []struct {
+		name         string
+		rawTokens    int
+		parsedTokens int
+	}{
+		{"exactly -100", 100, 200},
+		{"exactly +100", 200, 100},
+		{"exactly -101", 100, 201},
+		{"exactly +101", 201, 100},
+	}
+
+	for _, tc := range testCases {
+		record := domain.NewCommandRecord("git", []string{"status"}, tc.rawTokens, tc.parsedTokens, time.Second, "/project")
+		err = tracker.Record(ctx, record)
+		if err != nil {
+			t.Fatalf("Record() error for %s = %v", tc.name, err)
+		}
+	}
+
+	// Step 1: Verify ALL records ARE stored by querying database directly
+	totalCount, err := tracker.CountAllRecordsForTest(ctx)
+	if err != nil {
+		t.Fatalf("CountAllRecordsForTest() error = %v", err)
+	}
+	if totalCount != len(testCases) {
+		t.Errorf("Database contains %d records, want %d (all boundary records should be stored)", totalCount, len(testCases))
+	}
+
+	// Step 2: History now filters to records with meaningful token savings (|tokens_saved| > 100)
+	// Only -101 and +101 meet this criteria
+	history, err := tracker.History(ctx, 10)
+	if err != nil {
+		t.Fatalf("History() error = %v", err)
+	}
+	if len(history) != 2 {
+		t.Errorf("History() returned %d records, want 2 (only +101 and -101 cases)", len(history))
+	}
+
+	// Step 3: Verify Stats() counts only records with |tokens_saved| > 100
+	stats, err := tracker.Stats(ctx, ports.StatsOptions{})
+	if err != nil {
+		t.Fatalf("Stats() error = %v", err)
+	}
+	if stats.TotalCommands != 2 {
+		t.Errorf("Stats().TotalCommands = %d, want 2 (only +101 and -101 cases should be counted)", stats.TotalCommands)
+	}
 }

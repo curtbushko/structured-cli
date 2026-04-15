@@ -14,6 +14,9 @@ import (
 // coveragePattern matches "coverage: X.X% of statements" in output.
 var coveragePattern = regexp.MustCompile(`coverage:\s+(\d+(?:\.\d+)?)\%\s+of\s+statements`)
 
+// cachedPattern matches "(cached)" in test output to detect cached test results.
+var cachedPattern = regexp.MustCompile(`\(cached\)`)
+
 // TestEvent represents a single JSON event from 'go test -json' output.
 // Each line of go test -json output is a TestEvent.
 type TestEvent struct {
@@ -50,12 +53,14 @@ func NewTestParser() *TestParser {
 			"Go Test Output",
 			"object",
 			map[string]domain.PropertySchema{
-				"passed":   {Type: "integer", Description: "Total number of tests that passed"},
-				"failed":   {Type: "integer", Description: "Total number of tests that failed"},
-				"skipped":  {Type: "integer", Description: "Total number of tests that were skipped"},
-				"packages": {Type: "array", Description: "Per-package test results"},
+				"passed":          {Type: "integer", Description: "Total number of tests that passed"},
+				"failed":          {Type: "integer", Description: "Total number of tests that failed"},
+				"skipped":         {Type: "integer", Description: "Total number of tests that were skipped"},
+				"packages_passed": {Type: "integer", Description: "Total number of packages that passed (ok status)"},
+				"packages_failed": {Type: "integer", Description: "Total number of packages that failed"},
+				"packages":        {Type: "array", Description: "Per-package test results"},
 			},
-			[]string{"passed", "failed", "skipped", "packages"},
+			[]string{"passed", "failed", "skipped", "packages_passed", "packages_failed", "packages"},
 		),
 	}
 }
@@ -66,6 +71,7 @@ type testParseState struct {
 	packages        map[string]*TestPackage
 	testOutput      map[string]string
 	packageCoverage map[string]float64
+	cachedPackages  map[string]bool
 }
 
 // Parse reads go test -json output and returns structured TestResult.
@@ -79,14 +85,17 @@ func (p *TestParser) Parse(r io.Reader) (domain.ParseResult, error) {
 
 	state := &testParseState{
 		result: &TestResult{
-			Passed:   0,
-			Failed:   0,
-			Skipped:  0,
-			Packages: []TestPackage{},
+			Passed:         0,
+			Failed:         0,
+			Skipped:        0,
+			PackagesPassed: 0,
+			PackagesFailed: 0,
+			Packages:       []TestPackage{},
 		},
 		packages:        make(map[string]*TestPackage),
 		testOutput:      make(map[string]string),
 		packageCoverage: make(map[string]float64),
+		cachedPackages:  make(map[string]bool),
 	}
 
 	if len(data) == 0 {
@@ -181,10 +190,16 @@ func (s *testParseState) handleOutput(event *TestEvent) {
 		s.testOutput[key] += event.Output
 	}
 
-	// Check for coverage line (package-level output)
+	// Check for package-level output
 	if event.Test == "" && event.Package != "" {
+		// Check for coverage line
 		if cov := parseCoverageLine(event.Output); cov >= 0 {
 			s.packageCoverage[event.Package] = cov
+		}
+
+		// Check for cached test results "(cached)" marker
+		if cachedPattern.MatchString(event.Output) {
+			s.cachedPackages[event.Package] = true
 		}
 	}
 }
@@ -206,20 +221,27 @@ func parseCoverageLine(output string) float64 {
 }
 
 // handlePass processes a pass event.
+// For token savings, passing tests do NOT store output.
 func (s *testParseState) handlePass(event *TestEvent) {
 	pkg := s.packages[event.Package]
 	if event.Test != "" {
 		s.result.Passed++
-		key := event.Package + "/" + event.Test
 		pkg.Tests = append(pkg.Tests, TestCase{
 			Name:     event.Test,
 			Package:  event.Package,
 			Passed:   true,
 			Duration: event.Elapsed,
-			Output:   s.testOutput[key],
+			Output:   "", // Token savings: no output for passing tests
 		})
 	} else {
+		// Package-level pass event
 		pkg.Elapsed = event.Elapsed
+		s.result.PackagesPassed++
+
+		// Mark as cached if we detected "(cached)" in output
+		if s.cachedPackages[event.Package] {
+			pkg.Cached = true
+		}
 	}
 }
 
@@ -238,23 +260,25 @@ func (s *testParseState) handleFail(event *TestEvent) {
 		})
 		pkg.Passed = false
 	} else {
+		// Package-level fail event
 		pkg.Elapsed = event.Elapsed
 		pkg.Passed = false
+		s.result.PackagesFailed++
 	}
 }
 
 // handleSkip processes a skip event.
+// For token savings, skipped tests do NOT store output (similar to passing tests).
 func (s *testParseState) handleSkip(event *TestEvent) {
 	if event.Test != "" {
 		s.result.Skipped++
-		key := event.Package + "/" + event.Test
 		pkg := s.packages[event.Package]
 		pkg.Tests = append(pkg.Tests, TestCase{
 			Name:     event.Test,
 			Package:  event.Package,
 			Passed:   true, // Skipped tests aren't failures
 			Duration: event.Elapsed,
-			Output:   s.testOutput[key],
+			Output:   "", // Token savings: no output for skipped tests
 		})
 	}
 }
