@@ -54,6 +54,9 @@
       devShells = forEachSupportedSystem ({ pkgs, system }:
         let
           sharedConfigs = golang-shared-configs.packages.${system}.all-configs;
+          make-wrapper = pkgs.writeShellScriptBin "make" ''
+            exec ${pkgs.go-task}/bin/task "$@"
+          '';
         in {
         default = pkgs.mkShell {
           packages = with pkgs; [
@@ -64,6 +67,7 @@
             golangci-lint
             (go-ai-lint { inherit pkgs; })
             (godog { inherit pkgs; })
+            make-wrapper
             sharedConfigs
 
             # E2E testing dependencies
